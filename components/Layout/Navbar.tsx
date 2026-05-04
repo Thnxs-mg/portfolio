@@ -125,7 +125,7 @@ const Navbar: React.FC<NavbarProps> = ({ language, setLanguage, isDark, toggleTh
                     onClick={(e) => handleNavClick(e, link.href)}
                     className={`font-semibold transition-colors duration-200 text-sm xl:text-base cursor-pointer ${
                       isActive 
-                        ? 'text-[#b8b2b0]' // Actif : Cyan (Pas de glitch, juste couleur)
+                        ? 'text-[#b8b2b0] dark:text-white dark:drop-shadow-[0_0_8px_rgba(184,178,176,0.65)]'
                         : 'text-[#151621] dark:text-gray-300 hover:text-[#b8b2b0] dark:hover:text-[#b8b2b0]' // Inactif
                     }`}
                   >
@@ -181,7 +181,7 @@ const Navbar: React.FC<NavbarProps> = ({ language, setLanguage, isDark, toggleTh
                   onClick={(e) => handleNavClick(e, link.href)}
                   className={`block px-4 py-4 rounded-xl font-bold transition-all text-lg cursor-pointer ${
                     isActive 
-                      ? 'text-[#b8b2b0] bg-[#b8b2b0]/5' // Mobile : Cyan + fond très léger
+                      ? 'text-[#151621] dark:text-white bg-[#b8b2b0]/15 dark:bg-[#b8b2b0]/20 border border-[#b8b2b0]/30'
                       : 'text-[#151621] dark:text-gray-300 hover:bg-[#b8b2b0] hover:text-white'
                   }`}
                 >
