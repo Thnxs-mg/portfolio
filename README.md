@@ -1,2 +1,3 @@
-# portfolio
-My developer portfolio
+# Portfolio
+
+Community manager portfolio built with React, TypeScript, and Vite.
