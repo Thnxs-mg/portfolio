@@ -3,16 +3,14 @@ import { Phone, Mail, Download } from 'lucide-react';
 import { PERSONAL_INFO, TRANSLATIONS } from '../../constants';
 import { Language } from '../../types';
 import { CapsuleDivider } from '../Shared/StyledForms';
-import cvFr from '../../assets/Cv_FRS.pdf';
-import cvEn from '../../assets/Cv_ENG.pdf';
 
 interface ContactSectionProps {
   language: Language;
 }
 
 const CV_LINKS: Record<Language, string> = {
-  fr: cvFr,
-  en: cvEn,
+  fr: '/Cv_FRS.pdf',
+  en: '/Cv_ENG.pdf',
 };
 
 const ContactItem: React.FC<{ icon: React.ReactNode; label: string; value: string; href?: string }> = ({ icon, label, value, href }) => (
