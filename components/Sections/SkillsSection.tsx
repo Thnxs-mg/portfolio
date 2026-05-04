@@ -1,6 +1,7 @@
 
 import React from 'react';
-import { SKILLS, TRANSLATIONS } from '../../constants';
+import { CalendarCheck, FileText, Palette, Share2 } from 'lucide-react';
+import { TRANSLATIONS } from '../../constants';
 import { Language } from '../../types';
 import { CapsuleDivider } from '../Shared/StyledForms';
 
@@ -8,69 +9,60 @@ interface SkillsSectionProps {
   language: Language;
 }
 
-const SkillBar: React.FC<{ name: string | Record<Language, string>; level: number; language: Language }> = ({ name, level, language }) => {
-  const displayName = typeof name === 'string' ? name : name[language];
-  return (
-    <div className="mb-5 sm:mb-6">
-      <div className="flex justify-between mb-1.5 sm:mb-2">
-        <span className="text-xs sm:text-sm font-black text-[#2D3243] dark:text-white uppercase tracking-wider">{displayName}</span>
-        <span className="text-[10px] sm:text-xs font-black text-[#52B2BF]">{level}%</span>
-      </div>
-      <div className="w-full bg-[#BDC3C7] dark:bg-white/10 rounded-full h-2 sm:h-3">
-        <div 
-          className="bg-[#2D3243] dark:bg-[#52B2BF] h-full rounded-full transition-all duration-1000 ease-out shadow-sm" 
-          style={{ width: `${level}%` }}
-        ></div>
-      </div>
-    </div>
-  );
-};
-
 const SkillsSection: React.FC<SkillsSectionProps> = ({ language }) => {
   const t = TRANSLATIONS[language];
+  const skills = [
+    {
+      title: {
+        fr: 'Gestion de réseaux sociaux',
+        en: 'Social media management',
+      },
+      icon: Share2,
+    },
+    {
+      title: {
+        fr: 'Branding et identité visuelle',
+        en: 'Branding and visual identity',
+      },
+      icon: Palette,
+    },
+    {
+      title: {
+        fr: 'Planification éditorial',
+        en: 'Editorial planning',
+      },
+      icon: CalendarCheck,
+    },
+    {
+      title: {
+        fr: 'Création de contenu',
+        en: 'Content creation',
+      },
+      icon: FileText,
+    },
+  ];
+
   return (
-    <section id="skills" className="py-16 sm:py-24 px-4 sm:px-6 bg-gray-50 dark:bg-white/[0.02]">
+    <section id="skills" className="py-16 sm:py-24 px-4 sm:px-6">
       <div className="max-w-5xl mx-auto">
         <CapsuleDivider className="mb-8 sm:mb-8 w-fit mx-auto md:mx-0">
           {t.sections.skills}
         </CapsuleDivider>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-12 lg:gap-x-20 gap-y-12 sm:gap-y-16">
-          {/* Backend */}
-          <div className="scroll-mt-24">
-            <h3 className="text-lg sm:text-xl font-black uppercase mb-6 sm:mb-8 text-[#52B2BF] flex items-center gap-3">
-              <span className="w-6 sm:w-8 h-1 bg-[#52B2BF] rounded-full"></span>
-              Back-end
-            </h3>
-            {SKILLS.backend.map(skill => <SkillBar key={skill.name as string} {...skill} language={language} />)}
-          </div>
-
-          {/* Frontend */}
-          <div className="scroll-mt-24">
-            <h3 className="text-lg sm:text-xl font-black uppercase mb-6 sm:mb-8 text-[#52B2BF] flex items-center gap-3">
-              <span className="w-6 sm:w-8 h-1 bg-[#52B2BF] rounded-full"></span>
-              Front-end
-            </h3>
-            {SKILLS.frontend.map(skill => <SkillBar key={skill.name as string} {...skill} language={language} />)}
-          </div>
-
-          {/* Databases */}
-          <div className="scroll-mt-24">
-            <h3 className="text-lg sm:text-xl font-black uppercase mb-6 sm:mb-8 text-[#52B2BF] flex items-center gap-3">
-              <span className="w-6 sm:w-8 h-1 bg-[#52B2BF] rounded-full"></span>
-              Databases
-            </h3>
-            {SKILLS.databases.map(skill => <SkillBar key={skill.name as string} {...skill} language={language} />)}
-          </div>
-
-          {/* Languages */}
-          <div className="scroll-mt-24">
-            <h3 className="text-lg sm:text-xl font-black uppercase mb-8 text-[#52B2BF] flex items-center gap-3">
-              <span className="w-6 sm:w-8 h-1 bg-[#52B2BF] rounded-full"></span>
-              {language === 'fr' ? 'Langues' : 'Languages'}
-            </h3>
-            {SKILLS.languages.map(skill => <SkillBar key={typeof skill.name === 'string' ? skill.name : skill.name.en} {...skill} language={language} />)}
-          </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 sm:gap-6">
+          {skills.map(({ title, icon: Icon }) => (
+            <div
+              key={title.fr}
+              className="group min-h-52 rounded-2xl bg-white dark:bg-[#151621] border border-[#BDC3C7]/30 dark:border-white/10 p-6 sm:p-7 shadow-sm hover:shadow-xl hover:shadow-[#b8b2b0]/10 hover:-translate-y-1 hover:border-[#b8b2b0] transition-all duration-300 flex flex-col justify-between"
+            >
+              <div className="w-12 h-12 rounded-xl bg-[#151621] dark:bg-white text-white dark:text-[#151621] flex items-center justify-center group-hover:bg-[#b8b2b0] group-hover:text-white transition-colors">
+                <Icon size={24} strokeWidth={2.5} />
+              </div>
+              <h3 className="mt-8 text-lg sm:text-xl font-black text-[#151621] dark:text-white uppercase leading-snug">
+                {title[language]}
+              </h3>
+            </div>
+          ))}
         </div>
       </div>
     </section>

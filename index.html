@@ -16,8 +16,8 @@
       theme: {
         extend: {
           colors: {
-            cvDark: '#2D3243',
-            cvAccent: '#52B2BF',
+            cvDark: '#151621',
+            cvAccent: '#b8b2b0',
             cvRed: '#E74C3C',
             cvGrey: '#BDC3C7',
           }
@@ -50,6 +50,38 @@
       animation: float 10s ease-in-out infinite;
     }
 
+    @keyframes page-enter {
+      from {
+        opacity: 0;
+      }
+
+      to {
+        opacity: 1;
+      }
+    }
+
+    .page-transition {
+      animation: page-enter 120ms ease-out both;
+      will-change: opacity;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      html {
+        scroll-behavior: auto;
+      }
+
+      .page-transition,
+      .blob-animate {
+        animation: none;
+      }
+
+      * {
+        transition-duration: 0.01ms !important;
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+      }
+    }
+
     .dark body {
       background-color: #12141d;
       color: #f3f4f6;
@@ -65,21 +97,21 @@
   }
 }
 </script>
-  <link rel="apple-touch-icon" sizes="180x180"
-    href="https://cdn.jsdelivr.net/gh/RdjcMada/jason-chris-portfolio@main/assets/my_logo/apple-touch-icon.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
 
-  <link rel="icon" type="image/png" sizes="32x32"
-    href="https://cdn.jsdelivr.net/gh/RdjcMada/jason-chris-portfolio@main/assets/my_logo/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
 
-  <link rel="icon" type="image/png" sizes="16x16"
-    href="https://cdn.jsdelivr.net/gh/RdjcMada/jason-chris-portfolio@main/assets/my_logo/favicon-16x16.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="/android-chrome-192x192.png">
 
-  <link rel="shortcut icon"
-    href="https://cdn.jsdelivr.net/gh/RdjcMada/jason-chris-portfolio@main/assets/my_logo/favicon.ico">
+  <link rel="icon" type="image/png" sizes="512x512" href="/android-chrome-512x512.png">
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+
+  <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon">
 
 </head>
 
-<body class="bg-white text-[#2D3243]">
+<body class="bg-white text-[#151621]">
   <div id="root"></div>
   <script type="module" src="/index.tsx"></script>
 </body>

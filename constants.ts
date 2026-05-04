@@ -1,18 +1,20 @@
 import { Experience, AcademicProject, Project, Translations } from './types';
-
-export const GITHUB_USERNAME = 'RdjcMada';
+import arogneLogo from './assets/project_icon/arogne.jpeg';
+import clayChrisLogo from './assets/project_icon/claychris.jpg';
+import gozoLogo from './assets/project_icon/gozo.jpg';
 
 export const PERSONAL_INFO = {
   fullName: 'RANDRIAMAHERY JASON CHRIS',
   title: {
-    fr: 'DÉVELOPPEUR FULL-STACK JAVA / DJANGO – JUNIOR',
-    en: 'JUNIOR JAVA / DJANGO FULL-STACK DEVELOPER'
+    fr: 'COMMUNITY MANAGER JUNIOR',
+    en: 'JUNIOR COMMUNITY MANAGER'
+  },
+  tagline: {
+    fr: "Expérience dans la gestion de pages de marques, la création de contenu et le développement de l’image digitale.",
+    en: 'Experience managing brand pages, creating content, and developing digital brand image.'
   },
   phone: '+ 261 38 53 989 18',
   email: 'rd.jasonchris@gmail.com',
-  address: 'Cité Canada M42 Parcelle 23/12',
-  github: `https://github.com/${GITHUB_USERNAME}`,
-  linkedin: 'https://www.linkedin.com/in/jason-randriamahery-419663261/',
 };
 
 // --- EXPÉRIENCES ---
@@ -79,39 +81,54 @@ export const ACADEMIC_PROJECTS: Record<'fr' | 'en', AcademicProject[]> = {
 export const REALIZED_PROJECTS: Record<'fr' | 'en', Project[]> = {
   fr: [
     {
-      title: 'Hôtel Blue Management',
-      description: 'Système complet de gestion hôtelière.',
-      fullDescription: 'Développement d\'une plateforme interactive complète pour la gestion hôtelière. Le système inclut un planning dynamique en temps réel pour les réceptions, un moteur de réservation intelligent qui empêche les conflits, une facturation PDF automatique et des tableaux de bord financiers détaillés.',
-      technologies: ['Django REST', 'React', 'TypeScript', 'PostgreSQL', 'Tailwind'],
+      title: 'Arogné (2026)',
+      description: 'Création de contenu, gestion de pages et planification éditoriale.',
+      fullDescription: 'Gestion de la page Facebook, création de contenu et planification éditoriale. La page a été lancée au mois d’avril, puis une approche plus structurée et professionnelle a été mise en place en mai afin de gérer l’intégralité de la présence digitale.',
+      technologies: ['Facebook', 'Création de contenu', 'Planification éditoriale', 'Gestion de page'],
       category: 'professional',
-      imageUrl: 'https://cdn.jsdelivr.net/gh/RdjcMada/jason-chris-portfolio@main/assets/project_icon/blue_hotel_logo.png',
-      // githubUrl: '...' (Projet privé probablement)
+      imageUrl: arogneLogo,
     },
     {
-      title: 'Gestion RH (ERPNext)',
-      description: 'Module personnalisé pour l\'ERP open-source ERPNext.',
-      fullDescription: 'Création d\'une application personnalisée au sein de l\'écosystème Frappe/ERPNext. Extension des DocTypes standards pour gérer les congés spécifiques, les évaluations de performance et l\'automatisation de la paie selon les normes locales.',
-      technologies: ['Python', 'Frappe', 'MariaDB', 'ERPNext'],
-      category: 'academic',
-      imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/9/95/Erpnext_logo.svg',
+      title: 'Gozo (2024)',
+      description: 'Punch, rhum arrangé, publications et relation client.',
+      fullDescription: 'Participation à la création de certaines publications, conception d’affiches publicitaires et gestion des réponses aux clients pour la marque Gozo, spécialisée dans le punch et le rhum arrangé.',
+      technologies: ['Publications', 'Affiches publicitaires', 'Relation client', 'Réseaux sociaux'],
+      category: 'professional',
+      imageUrl: gozoLogo,
+    },
+    {
+      title: 'ClayChris (2023)',
+      description: 'Création de publications et d’affiches publicitaires.',
+      fullDescription: 'Participation à la création de certaines publications et conception d’affiches publicitaires pour la communication de ClayChris.',
+      technologies: ['Création visuelle', 'Publications', 'Affiches publicitaires'],
+      category: 'professional',
+      imageUrl: clayChrisLogo,
     }
   ],
   en: [
     {
-      title: 'Hotel Blue Management',
-      description: 'Complete hotel management system.',
-      fullDescription: 'Development of a comprehensive interactive platform for hotel management. The system includes a real-time dynamic schedule for receptions, a smart booking engine preventing conflicts, automated PDF invoicing, and detailed financial dashboards.',
-      technologies: ['Django REST', 'React', 'TypeScript', 'PostgreSQL', 'Tailwind'],
+      title: 'Arogné (2026)',
+      description: 'Content creation, page management, and editorial planning.',
+      fullDescription: 'Facebook page management, content creation, and editorial planning. The page was started in April, then a more structured and professional approach was put in place in May to manage the full digital presence.',
+      technologies: ['Facebook', 'Content creation', 'Editorial planning', 'Page management'],
       category: 'professional',
-      imageUrl: 'https://cdn.jsdelivr.net/gh/RdjcMada/jason-chris-portfolio@main/assets/project_icon/blue_hotel_logo.png',
+      imageUrl: arogneLogo,
     },
     {
-      title: 'HR Management (ERPNext)',
-      description: 'Custom module for ERPNext.',
-      fullDescription: 'Creation of a custom application within the Frappe/ERPNext ecosystem. Extension of standard DocTypes to handle specific leaves, performance evaluations, and payroll automation according to local standards.',
-      technologies: ['Python', 'Frappe', 'MariaDB', 'ERPNext'],
-      category: 'academic',
-      imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/9/95/Erpnext_logo.svg',
+      title: 'Gozo (2024)',
+      description: 'Punch, infused rum, posts, and customer replies.',
+      fullDescription: 'Created selected posts, designed advertising posters, and handled customer replies for Gozo, a brand focused on punch and infused rum.',
+      technologies: ['Posts', 'Advertising posters', 'Customer relations', 'Social media'],
+      category: 'professional',
+      imageUrl: gozoLogo,
+    },
+    {
+      title: 'ClayChris (2023)',
+      description: 'Post creation and advertising poster design.',
+      fullDescription: 'Created selected posts and designed advertising posters for ClayChris communication materials.',
+      technologies: ['Visual creation', 'Posts', 'Advertising posters'],
+      category: 'professional',
+      imageUrl: clayChrisLogo,
     }
   ]
 };
@@ -120,26 +137,26 @@ export const REALIZED_PROJECTS: Record<'fr' | 'en', Project[]> = {
 export const EDUCATION: Record<'fr' | 'en', any[]> = {
   fr: [
     {
-      degree: 'Licence en informatique (en cours)',
+      degree: 'Licence en informatique',
       school: 'IT University',
       details: ''
     },
     {
       degree: 'Diplôme d’études secondaires',
       school: '2022',
-      details: 'Mention “Assez Bien”'
+      details: ''
     }
   ],
   en: [
     {
-      degree: 'Bachelor in Computer Science (Ongoing)',
+      degree: 'Bachelor in Computer Science',
       school: 'IT University',
       details: ''
     },
     {
       degree: 'High School Diploma',
       school: '2022',
-      details: 'Mention "Fairly Well"'
+      details: ''
     }
   ]
 };
@@ -173,41 +190,37 @@ export const HOBBIES: Record<'fr' | 'en', string[]> = {
 // --- TRANSLATIONS ---
 export const TRANSLATIONS: Record<'fr' | 'en', Translations> = {
   fr: {
-    nav: { home: 'Accueil', about: 'À Propos', skills: 'Compétences', projects: 'Projets', contact: 'Contact', activite: 'Activité GitHub' },
-    hero: { viewProjects: 'Voir mes Projets', contactMe: 'Me contacter' },
+    nav: { home: 'Accueil', about: 'À Propos', skills: 'Compétences', hobbies: 'Loisirs', projects: 'Projets', contact: 'Contact' },
+    hero: { viewProjects: 'Voir mes réalisations', contactMe: 'Me contacter' },
     sections: {
       experience: 'Expérience professionnelle',
       academicProjects: 'Projets',
       education: 'Diplômes',
       skills: 'Compétences',
-      githubProjects: 'Projets GitHub',
       hobbies: 'Loisirs',
       contact: 'Contact'
     },
     contact: {
       ready: 'Prêt à collaborer ?',
       sub: "Je suis actuellement à la recherche d'opportunités en tant que développeur Junior. N'hésitez pas à me contacter !",
-      socials: 'Réseaux Sociaux',
       cvText: "Besoin d'un CV format PDF ?",
       downloadBtn: 'Télécharger mon CV'
     }
   },
   en: {
-    nav: { home: 'Home', about: 'About', skills: 'Skills', projects: 'Projects', contact: 'Contact', activite: 'GitHub Activity' },
-    hero: { viewProjects: 'View Projects', contactMe: 'Contact Me' },
+    nav: { home: 'Home', about: 'About', skills: 'Skills', hobbies: 'Hobbies', projects: 'Projects', contact: 'Contact' },
+    hero: { viewProjects: 'View My Work', contactMe: 'Contact Me' },
     sections: {
       experience: 'Professional Experience',
       academicProjects: 'Projects',
       education: 'Diplomas',
       skills: 'Skills',
-      githubProjects: 'GitHub Projects',
       hobbies: 'Hobbies',
       contact: 'Contact'
     },
     contact: {
       ready: 'Ready to collaborate?',
       sub: "I am currently looking for opportunities as a Junior Developer. Feel free to contact me!",
-      socials: 'Social Networks',
       cvText: "Need a PDF resume?",
       downloadBtn: 'Download Resume'
     }

@@ -5,12 +5,19 @@ import react from '@vitejs/plugin-react';
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, '.', '');
   return {
-    // 👇 METS LE NOM EXACT DE TON REPO ICI (avec les slashs)
-    base: '/jason-chris-portfolio/', 
+    base: mode === 'production' ? '/jason-chris-portfolio/' : '/',
     
     server: {
       port: 3000,
+      strictPort: true,
       host: '0.0.0.0',
+      watch: {
+        usePolling: true,
+        interval: 100,
+      },
+      hmr: {
+        overlay: true,
+      },
     },
     plugins: [react()],
     define: {

@@ -1,27 +1,5 @@
 // src/types.ts
 
-// --- GITHUB ---
-export interface GitHubRepo {
-  id: number;
-  name: string;
-  description: string;
-  html_url: string;
-  homepage: string;
-  stargazers_count: number;
-  language: string;
-  updated_at: string;
-}
-
-export interface GitHubUser {
-  login: string;
-  avatar_url: string;
-  public_repos: number;
-  followers: number;
-  following: number;
-  bio: string;
-  html_url: string;
-}
-
 // --- COMPÉTENCES ---
 export interface Skill {
   // Le nom peut être une simple chaîne OU un objet avec traductions (pour les langues)
@@ -50,7 +28,6 @@ export interface Project {
   fullDescription?: string;
   technologies: string[];
   category: 'professional' | 'personal' | 'academic';
-  githubUrl?: string;
   demoUrl?: string;
   imageUrl?: string; // <--- NOUVEAU CHAMP
 }
@@ -63,9 +40,9 @@ export interface Translations {
     home: string;
     about: string;
     skills: string;
+    hobbies: string;
     projects: string;
     contact: string;
-    activite: string;
   };
   hero: {
     viewProjects: string;
@@ -76,14 +53,12 @@ export interface Translations {
     academicProjects: string;
     education: string;
     skills: string;
-    githubProjects: string;
     hobbies: string;
     contact: string;
   };
   contact: {
     ready: string;
     sub: string;
-    socials: string;
     cvText: string;
     downloadBtn: string;
   };
