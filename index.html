@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="fr" class="scroll-smooth">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Jason Chris | Portfolio</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+    rel="stylesheet">
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            cvDark: '#2D3243',
+            cvAccent: '#52B2BF',
+            cvRed: '#E74C3C',
+            cvGrey: '#BDC3C7',
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      transition: background-color 0.3s ease, color 0.3s ease;
+    }
+
+    /* Animation for geometric blobs */
+    @keyframes float {
+      0% {
+        transform: translate(0, 0) rotate(0deg);
+      }
+
+      50% {
+        transform: translate(10px, 15px) rotate(2deg);
+      }
+
+      100% {
+        transform: translate(0, 0) rotate(0deg);
+      }
+    }
+
+    .blob-animate {
+      animation: float 10s ease-in-out infinite;
+    }
+
+    .dark body {
+      background-color: #12141d;
+      color: #f3f4f6;
+    }
+  </style>
+  <script type="importmap">
+{
+  "imports": {
+    "react/": "https://esm.sh/react@^19.2.3/",
+    "react": "https://esm.sh/react@^19.2.3",
+    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
+    "lucide-react": "https://esm.sh/lucide-react@^0.562.0"
+  }
+}
+</script>
+  <link rel="apple-touch-icon" sizes="180x180"
+    href="https://cdn.jsdelivr.net/gh/RdjcMada/jason-chris-portfolio@main/assets/my_logo/apple-touch-icon.png">
+
+  <link rel="icon" type="image/png" sizes="32x32"
+    href="https://cdn.jsdelivr.net/gh/RdjcMada/jason-chris-portfolio@main/assets/my_logo/favicon-32x32.png">
+
+  <link rel="icon" type="image/png" sizes="16x16"
+    href="https://cdn.jsdelivr.net/gh/RdjcMada/jason-chris-portfolio@main/assets/my_logo/favicon-16x16.png">
+
+  <link rel="shortcut icon"
+    href="https://cdn.jsdelivr.net/gh/RdjcMada/jason-chris-portfolio@main/assets/my_logo/favicon.ico">
+
+</head>
+
+<body class="bg-white text-[#2D3243]">
+  <div id="root"></div>
+  <script type="module" src="/index.tsx"></script>
+</body>
+
+</html>
