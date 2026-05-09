@@ -26,14 +26,14 @@ const Navbar: React.FC<NavbarProps> = ({ language, setLanguage, isDark, toggleTh
     { name: t.nav.skills, href: '#skills' },
     { name: t.nav.activite, href: '#activite' }, // ID de la section GitHub
     { name: t.nav.contact, href: '#contact' },
-    { name: t.nav.projects, href: '/projects' },
+    { name: t.nav.projects, href: '/realisations' },
   ];
 
   // --- LOGIQUE DE DÉTECTION DU SCROLL ---
   useEffect(() => {
     // Si on est sur la page Projets, on force l'état actif sur le lien Projets
-    if (location.pathname === '/projects') {
-      setActiveSection('/projects');
+    if (location.pathname === '/realisations' || location.pathname === '/projects') {
+      setActiveSection('/realisations');
       return;
     }
 
@@ -72,23 +72,17 @@ const Navbar: React.FC<NavbarProps> = ({ language, setLanguage, isDark, toggleTh
       setActiveSection(targetId);
 
       if (location.pathname === '/') {
+        window.dispatchEvent(new CustomEvent('portfolio:section-change'));
         scroller.scrollTo(targetId, {
           smooth: true,
-          duration: 800,
+          duration: 420,
           offset: -80,
         });
       } else {
-        navigate('/');
-        setTimeout(() => {
-          scroller.scrollTo(targetId, {
-            smooth: true,
-            duration: 800,
-            offset: -80,
-          });
-        }, 100);
+        navigate('/', { state: { scrollTo: targetId } });
       }
     } else {
-      setActiveSection(href); // Pour le lien /projects
+      setActiveSection(href);
       navigate(href);
     }
   };
@@ -109,9 +103,15 @@ const Navbar: React.FC<NavbarProps> = ({ language, setLanguage, isDark, toggleTh
             <a 
               href="#home"
               onClick={(e) => handleNavClick(e, '#home')}
-              className="text-[#2D3243] dark:text-white font-extrabold tracking-tighter text-xl sm:text-2xl cursor-pointer hover:opacity-80 transition-opacity"
+              className="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity"
+              aria-label="Retour à l'accueil"
             >
-              JASON<span className="text-[#52B2BF]">CHRIS</span>
+              <span className="w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-[#030303] text-white flex items-center justify-center font-black text-lg sm:text-xl tracking-tight">
+                JC
+              </span>
+              <span className="text-[#151621] dark:text-white font-black text-lg sm:text-xl tracking-tight">
+                Jason Chris
+              </span>
             </a>
           </div>
 
@@ -127,8 +127,8 @@ const Navbar: React.FC<NavbarProps> = ({ language, setLanguage, isDark, toggleTh
                     onClick={(e) => handleNavClick(e, link.href)}
                     className={`font-semibold transition-colors duration-200 text-sm xl:text-base cursor-pointer ${
                       isActive 
-                        ? 'text-[#52B2BF]' // Actif : Cyan (Pas de glitch, juste couleur)
-                        : 'text-[#2D3243] dark:text-gray-300 hover:text-[#52B2BF] dark:hover:text-[#52B2BF]' // Inactif
+                        ? 'text-[#b8b2b0] dark:text-white dark:drop-shadow-[0_0_8px_rgba(184,178,176,0.65)]'
+                        : 'text-[#151621] dark:text-gray-300 hover:text-[#b8b2b0] dark:hover:text-[#b8b2b0]' // Inactif
                     }`}
                   >
                     {link.name}
@@ -140,7 +140,7 @@ const Navbar: React.FC<NavbarProps> = ({ language, setLanguage, isDark, toggleTh
             <div className="flex items-center space-x-3 xl:space-x-4">
               <button 
                 onClick={toggleTheme}
-                className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-white/10 transition-colors text-[#2D3243] dark:text-white"
+                className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-white/10 transition-colors text-[#151621] dark:text-white"
                 title="Toggle Theme"
               >
                 {isDark ? <Sun size={20} /> : <Moon size={20} />}
@@ -148,7 +148,7 @@ const Navbar: React.FC<NavbarProps> = ({ language, setLanguage, isDark, toggleTh
 
               <button 
                 onClick={() => setLanguage(language === 'fr' ? 'en' : 'fr')}
-                className="flex items-center gap-2 px-3 py-1 rounded-full border border-[#2D3243] dark:border-white/30 text-xs xl:text-sm font-bold hover:bg-[#2D3243] hover:text-white dark:hover:bg-white dark:hover:text-[#2D3243] transition-all"
+                className="flex items-center gap-2 px-3 py-1 rounded-full border border-[#151621] dark:border-white/30 text-xs xl:text-sm font-bold hover:bg-[#151621] hover:text-white dark:hover:bg-white dark:hover:text-[#151621] transition-all"
               >
                 <Languages size={14} />
                 {language.toUpperCase()}
@@ -158,12 +158,12 @@ const Navbar: React.FC<NavbarProps> = ({ language, setLanguage, isDark, toggleTh
 
           {/* Mobile menu controls */}
           <div className="lg:hidden flex items-center space-x-2">
-             <button onClick={toggleTheme} className="p-2 text-[#2D3243] dark:text-white rounded-full hover:bg-gray-100 dark:hover:bg-white/5">
+             <button onClick={toggleTheme} className="p-2 text-[#151621] dark:text-white rounded-full hover:bg-gray-100 dark:hover:bg-white/5">
                 {isDark ? <Sun size={20} /> : <Moon size={20} />}
              </button>
              <button
               onClick={() => setIsOpen(!isOpen)}
-              className="text-[#2D3243] dark:text-white hover:text-[#52B2BF] p-2"
+              className="text-[#151621] dark:text-white hover:text-[#b8b2b0] p-2"
             >
               {isOpen ? <X size={28} /> : <Menu size={28} />}
             </button>
@@ -183,8 +183,8 @@ const Navbar: React.FC<NavbarProps> = ({ language, setLanguage, isDark, toggleTh
                   onClick={(e) => handleNavClick(e, link.href)}
                   className={`block px-4 py-4 rounded-xl font-bold transition-all text-lg cursor-pointer ${
                     isActive 
-                      ? 'text-[#52B2BF] bg-[#52B2BF]/5' // Mobile : Cyan + fond très léger
-                      : 'text-[#2D3243] dark:text-gray-300 hover:bg-[#52B2BF] hover:text-white'
+                      ? 'text-[#151621] dark:text-white bg-[#b8b2b0]/15 dark:bg-[#b8b2b0]/20 border border-[#b8b2b0]/30'
+                      : 'text-[#151621] dark:text-gray-300 hover:bg-[#b8b2b0] hover:text-white'
                   }`}
                 >
                   {link.name}
@@ -194,7 +194,7 @@ const Navbar: React.FC<NavbarProps> = ({ language, setLanguage, isDark, toggleTh
             <div className="pt-4 flex justify-between items-center px-4">
                <button 
                   onClick={() => { setLanguage(language === 'fr' ? 'en' : 'fr'); setIsOpen(false); }}
-                  className="flex items-center gap-2 px-6 py-2 rounded-full border border-[#2D3243] dark:border-white/30 text-sm font-bold dark:text-white"
+                  className="flex items-center gap-2 px-6 py-2 rounded-full border border-[#151621] dark:border-white/30 text-sm font-bold dark:text-white"
                 >
                   <Languages size={18} />
                   {language === 'fr' ? 'Switch to English' : 'Passer en Français'}

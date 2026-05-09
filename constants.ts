@@ -1,4 +1,6 @@
 import { Experience, AcademicProject, Project, Translations } from './types';
+import hotelOverviewImage from './assets/Overview.png';
+import erpWorkspaceImage from './assets/workspace_finale.png';
 
 export const GITHUB_USERNAME = 'RdjcMada';
 
@@ -7,6 +9,10 @@ export const PERSONAL_INFO = {
   title: {
     fr: 'DÉVELOPPEUR FULL-STACK JAVA / DJANGO – JUNIOR',
     en: 'JUNIOR JAVA / DJANGO FULL-STACK DEVELOPER'
+  },
+  tagline: {
+    fr: 'Développement d’applications web fiables, d’API structurées et d’interfaces utiles, avec une attention particulière portée à la clarté et à l’expérience utilisateur.',
+    en: 'Building reliable web applications, structured APIs, and useful interfaces with strong attention to clarity and user experience.'
   },
   phone: '+ 261 38 53 989 18',
   email: 'rd.jasonchris@gmail.com',
@@ -84,7 +90,7 @@ export const REALIZED_PROJECTS: Record<'fr' | 'en', Project[]> = {
       fullDescription: 'Développement d\'une plateforme interactive complète pour la gestion hôtelière. Le système inclut un planning dynamique en temps réel pour les réceptions, un moteur de réservation intelligent qui empêche les conflits, une facturation PDF automatique et des tableaux de bord financiers détaillés.',
       technologies: ['Django REST', 'React', 'TypeScript', 'PostgreSQL', 'Tailwind'],
       category: 'professional',
-      imageUrl: 'https://cdn.jsdelivr.net/gh/RdjcMada/jason-chris-portfolio@main/assets/project_icon/blue_hotel_logo.png',
+      imageUrl: hotelOverviewImage,
       // githubUrl: '...' (Projet privé probablement)
     },
     {
@@ -93,7 +99,7 @@ export const REALIZED_PROJECTS: Record<'fr' | 'en', Project[]> = {
       fullDescription: 'Création d\'une application personnalisée au sein de l\'écosystème Frappe/ERPNext. Extension des DocTypes standards pour gérer les congés spécifiques, les évaluations de performance et l\'automatisation de la paie selon les normes locales.',
       technologies: ['Python', 'Frappe', 'MariaDB', 'ERPNext'],
       category: 'academic',
-      imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/9/95/Erpnext_logo.svg',
+      imageUrl: erpWorkspaceImage,
     }
   ],
   en: [
@@ -103,7 +109,7 @@ export const REALIZED_PROJECTS: Record<'fr' | 'en', Project[]> = {
       fullDescription: 'Development of a comprehensive interactive platform for hotel management. The system includes a real-time dynamic schedule for receptions, a smart booking engine preventing conflicts, automated PDF invoicing, and detailed financial dashboards.',
       technologies: ['Django REST', 'React', 'TypeScript', 'PostgreSQL', 'Tailwind'],
       category: 'professional',
-      imageUrl: 'https://cdn.jsdelivr.net/gh/RdjcMada/jason-chris-portfolio@main/assets/project_icon/blue_hotel_logo.png',
+      imageUrl: hotelOverviewImage,
     },
     {
       title: 'HR Management (ERPNext)',
@@ -111,7 +117,7 @@ export const REALIZED_PROJECTS: Record<'fr' | 'en', Project[]> = {
       fullDescription: 'Creation of a custom application within the Frappe/ERPNext ecosystem. Extension of standard DocTypes to handle specific leaves, performance evaluations, and payroll automation according to local standards.',
       technologies: ['Python', 'Frappe', 'MariaDB', 'ERPNext'],
       category: 'academic',
-      imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/9/95/Erpnext_logo.svg',
+      imageUrl: erpWorkspaceImage,
     }
   ]
 };
