@@ -5,111 +5,19 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Jason Chris | Portfolio</title>
-  <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
     rel="stylesheet">
-  <script>
-    tailwind.config = {
-      darkMode: 'class',
-      theme: {
-        extend: {
-          colors: {
-            cvDark: '#151621',
-            cvAccent: '#b8b2b0',
-            cvRed: '#E74C3C',
-            cvGrey: '#BDC3C7',
-          }
-        }
-      }
-    }
-  </script>
-  <style>
-    body {
-      font-family: 'Inter', sans-serif;
-      transition: background-color 0.3s ease, color 0.3s ease;
-    }
+  <link rel="icon" type="image/svg+xml" href="./assets/my_logo/favicon-jc.svg">
 
-    /* Animation for geometric blobs */
-    @keyframes float {
-      0% {
-        transform: translate(0, 0) rotate(0deg);
-      }
-
-      50% {
-        transform: translate(10px, 15px) rotate(2deg);
-      }
-
-      100% {
-        transform: translate(0, 0) rotate(0deg);
-      }
-    }
-
-    .blob-animate {
-      animation: float 10s ease-in-out infinite;
-    }
-
-    @keyframes page-enter {
-      from {
-        opacity: 0;
-      }
-
-      to {
-        opacity: 1;
-      }
-    }
-
-    .page-transition,
-    .section-transition {
-      animation: page-enter 120ms ease-out both;
-      will-change: opacity;
-    }
-
-    @media (prefers-reduced-motion: reduce) {
-      html {
-        scroll-behavior: auto;
-      }
-
-      .page-transition,
-      .section-transition,
-      .blob-animate {
-        animation: none;
-      }
-
-      * {
-        transition-duration: 0.01ms !important;
-        animation-duration: 0.01ms !important;
-        animation-iteration-count: 1 !important;
-      }
-    }
-
-    .dark body {
-      background-color: #12141d;
-      color: #f3f4f6;
-    }
-  </style>
-  <script type="importmap">
-{
-  "imports": {
-    "react/": "https://esm.sh/react@^19.2.3/",
-    "react": "https://esm.sh/react@^19.2.3",
-    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
-    "lucide-react": "https://esm.sh/lucide-react@^0.562.0"
-  }
-}
-</script>
   <link rel="apple-touch-icon" sizes="180x180" href="./assets/my_logo/apple-touch-icon.png">
-
-  <link rel="icon" type="image/png" sizes="32x32" href="./assets/my_logo/favicon-32x32.png">
 
   <link rel="icon" type="image/png" sizes="192x192" href="./assets/my_logo/android-chrome-192x192.png">
 
   <link rel="icon" type="image/png" sizes="512x512" href="./assets/my_logo/android-chrome-512x512.png">
 
-  <link rel="icon" type="image/png" sizes="16x16" href="./assets/my_logo/favicon-16x16.png">
-
-  <link rel="shortcut icon" href="./assets/my_logo/favicon.ico" type="image/x-icon">
+  <link rel="shortcut icon" href="./assets/my_logo/favicon-jc.svg" type="image/svg+xml">
 
 </head>
 

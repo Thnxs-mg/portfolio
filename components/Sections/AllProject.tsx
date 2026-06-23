@@ -2,7 +2,7 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { REALIZED_PROJECTS, TRANSLATIONS } from '../../constants';
 import { Language, Project } from '../../types';
-import { ArrowLeft, Github, Briefcase, GraduationCap, User, X, Eye, Rocket, Filter, Layers, Check } from 'lucide-react';
+import { ArrowLeft, Github, Briefcase, GraduationCap, User, X, Eye, Rocket, Filter, Check, Activity, CalendarDays, FolderGit2, ShieldCheck, Sparkles } from 'lucide-react';
 
 interface AllProjectsPageProps {
     language: Language;
@@ -18,16 +18,19 @@ const AllProjectsPage: React.FC<AllProjectsPageProps> = ({ language }) => {
     const [selectedTechs, setSelectedTechs] = useState<string[]>([]);
 
     useEffect(() => {
-        window.scrollTo(0, 0);
-    }, []);
-
-    useEffect(() => {
-        if (selectedProject || isFilterOpen) {
+        const isLocked = selectedProject !== null || isFilterOpen;
+        if (isLocked) {
             document.body.style.overflow = 'hidden';
         } else {
-            document.body.style.overflow = 'unset';
+            document.body.style.overflow = '';
         }
-        return () => { document.body.style.overflow = 'unset'; };
+        return () => {
+            // Différer la remise à zéro pour ne pas flusher le DOM
+            // de façon synchrone pendant l'animation de sortie de page.
+            requestAnimationFrame(() => {
+                document.body.style.overflow = '';
+            });
+        };
     }, [selectedProject, isFilterOpen]);
 
     const t = TRANSLATIONS[language];
@@ -82,7 +85,7 @@ const AllProjectsPage: React.FC<AllProjectsPageProps> = ({ language }) => {
     };
 
     return (
-        <div className="min-h-screen bg-[#f8f9fa] dark:bg-[#1a1c29] pt-28 pb-12 px-4 sm:px-6 transition-colors duration-300">
+        <div className="min-h-screen pt-28 pb-12 px-4 sm:px-6">
             <div className="max-w-6xl mx-auto">
 
                 {/* --- Header --- */}
@@ -108,22 +111,41 @@ const AllProjectsPage: React.FC<AllProjectsPageProps> = ({ language }) => {
                         {filteredProjects.map((project, idx) => {
                             const catStyle = getCategoryStyle(project.category);
                             return (
-                                <article key={idx} onClick={() => setSelectedProject(project)} className="group cursor-pointer bg-white dark:bg-[#151621] rounded-[2rem] overflow-hidden shadow-xl hover:shadow-2xl hover:-translate-y-2 transition-all duration-300 border border-slate-100 dark:border-white/5 flex flex-col h-full animate-in fade-in zoom-in-95 duration-500">
-                                    <div className="relative h-48 w-full overflow-hidden bg-gray-200 dark:bg-gray-800">
+                                <article
+                                    key={project.slug || project.title}
+                                    onClick={() => setSelectedProject(project)}
+                                    className="group cursor-pointer bg-white dark:bg-[#151621] rounded-[1.75rem] overflow-hidden shadow-[0_18px_50px_rgba(15,23,42,0.08)] hover:shadow-[0_26px_70px_rgba(15,23,42,0.16)] hover:-translate-y-2 transition-all duration-500 border border-slate-100 dark:border-white/5 flex flex-col h-full animate-in fade-in zoom-in-95 duration-500 transform-gpu"
+                                >
+                                    <div className="relative h-48 w-full overflow-hidden bg-[radial-gradient(circle_at_top_left,rgba(184,178,176,0.24),transparent_38%),linear-gradient(135deg,#f8fafc,#eef2f7)] dark:bg-[radial-gradient(circle_at_top_left,rgba(184,178,176,0.16),transparent_42%),linear-gradient(135deg,#1e212b,#11131b)]">
                                         {project.imageUrl ? (
-                                            <img src={project.imageUrl} alt={project.title} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
+                                            <img src={project.imageUrl} alt={project.title} className="w-full h-full object-contain p-8 transition-transform duration-700 group-hover:scale-105" />
                                         ) : (
                                             <div className="w-full h-full flex items-center justify-center text-gray-400"><Briefcase size={32} /></div>
                                         )}
-                                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"><span className="bg-white/20 backdrop-blur-md text-white px-4 py-2 rounded-full font-bold text-sm flex items-center gap-2"><Eye size={16} /> {language === 'fr' ? 'Détails' : 'Details'}</span></div>
+                                        <div className="absolute inset-0 bg-[#151621]/55 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center"><span className="bg-white/20 backdrop-blur-md text-white px-4 py-2 rounded-full font-bold text-sm flex items-center gap-2"><Eye size={16} /> {language === 'fr' ? 'Détails' : 'Details'}</span></div>
                                         <div className="absolute top-4 left-4"><div className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-white/95 backdrop-blur shadow-sm ${catStyle.text}`}>{catStyle.icon} {catStyle.label}</div></div>
+                                        {project.status && <div className="absolute top-4 right-4 max-w-[48%] truncate rounded-full bg-white/90 px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-slate-600 shadow-sm backdrop-blur dark:bg-[#151621]/85 dark:text-slate-200">{project.status}</div>}
                                     </div>
                                     <div className="p-6 flex flex-col flex-grow">
+                                        {project.type && <div className="mb-3 flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-[#b8b2b0]"><Sparkles size={13} /> {project.type}</div>}
                                         <h3 className="text-xl font-black text-[#151621] dark:text-white mb-3 leading-tight group-hover:text-[#b8b2b0] transition-colors">{project.title}</h3>
-                                        <p className="text-slate-600 dark:text-gray-400 text-sm leading-relaxed mb-6 line-clamp-3">{project.description}</p>
-                                        <div className="mt-auto flex flex-wrap gap-2">{project.technologies.slice(0, 3).map((tech, i) => (<span key={i} className="px-2 py-1 bg-slate-100 dark:bg-white/10 text-[#151621] dark:text-gray-300 text-[10px] font-bold uppercase tracking-widest rounded-md">{tech}</span>))}{project.technologies.length > 3 && <span className="px-2 py-1 text-slate-400 text-[10px] font-bold">+{project.technologies.length - 3}</span>}</div>
+                                        <p className="text-slate-600 dark:text-gray-400 text-sm leading-relaxed mb-5 line-clamp-3">{project.description}</p>
+                                        {project.features && (
+                                            <div className="mb-6 space-y-2">
+                                                {project.features.slice(0, 2).map((feature) => (
+                                                    <div key={feature} className="flex items-start gap-2 text-xs text-slate-500 dark:text-gray-400">
+                                                        <ShieldCheck size={14} className="mt-0.5 shrink-0 text-[#b8b2b0]" />
+                                                        <span className="line-clamp-1">{feature}</span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+                                        <div className="mt-auto flex flex-wrap gap-2">{project.technologies.slice(0, 4).map((tech, i) => (<span key={i} className="px-2 py-1 bg-slate-100 dark:bg-white/10 text-[#151621] dark:text-gray-300 text-[10px] font-bold uppercase tracking-widest rounded-md">{tech}</span>))}{project.technologies.length > 4 && <span className="px-2 py-1 text-slate-400 text-[10px] font-bold">+{project.technologies.length - 4}</span>}</div>
                                     </div>
-                                    <div className="px-6 pb-6 pt-0 flex gap-3 mt-auto">{project.githubUrl && <Github size={16} className="text-gray-400" />}{project.demoUrl && <Rocket size={16} className="text-[#b8b2b0]" />}</div>
+                                    <div className="px-6 pb-6 pt-0 flex items-center justify-between gap-3 mt-auto text-[11px] font-bold text-slate-400">
+                                        <span className="flex items-center gap-1.5"><CalendarDays size={14} /> {project.lastActivity || (language === 'fr' ? 'Analysé' : 'Analyzed')}</span>
+                                        <span className="flex items-center gap-2">{project.githubUrl && <Github size={16} />}{project.demoUrl && <Rocket size={16} className="text-[#b8b2b0]" />}</span>
+                                    </div>
                                 </article>
                             );
                         })}
@@ -223,8 +245,8 @@ const AllProjectsPage: React.FC<AllProjectsPageProps> = ({ language }) => {
                         <div className="absolute inset-0 bg-black/70 backdrop-blur-sm cursor-pointer" onClick={() => setSelectedProject(null)}></div>
                         <div className="relative bg-white dark:bg-[#1e212b] w-full max-w-2xl rounded-[2rem] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300 max-h-[90vh] flex flex-col">
                             <button onClick={() => setSelectedProject(null)} className="absolute top-4 right-4 z-10 p-2 bg-black/20 hover:bg-black/40 text-white rounded-full transition-colors backdrop-blur-md"><X size={20} /></button>
-                             <div className="h-56 sm:h-72 w-full shrink-0 relative bg-gray-200 dark:bg-gray-800">
-                                {selectedProject.imageUrl && <img src={selectedProject.imageUrl} alt={selectedProject.title} className="w-full h-full object-cover" />}
+                             <div className="h-56 sm:h-72 w-full shrink-0 relative bg-[radial-gradient(circle_at_top_left,rgba(184,178,176,0.28),transparent_36%),linear-gradient(135deg,#f8fafc,#e7ebf1)] dark:bg-[radial-gradient(circle_at_top_left,rgba(184,178,176,0.18),transparent_40%),linear-gradient(135deg,#1e212b,#11131b)]">
+                                {selectedProject.imageUrl && <img src={selectedProject.imageUrl} alt={selectedProject.title} className="w-full h-full object-contain p-10" />}
                                 <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent"></div>
                                 <div className="absolute bottom-6 left-6 sm:left-8 right-6">
                                     <h2 className="text-2xl sm:text-3xl font-black text-white mb-2 shadow-sm">{selectedProject.title}</h2>
@@ -235,14 +257,35 @@ const AllProjectsPage: React.FC<AllProjectsPageProps> = ({ language }) => {
                                 </div>
                             </div>
                             <div className="p-6 sm:p-8 overflow-y-auto custom-scrollbar">
+                                {(selectedProject.type || selectedProject.complexity || selectedProject.lastActivity) && (
+                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-8">
+                                        {selectedProject.type && <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4 dark:border-white/10 dark:bg-white/5"><p className="mb-1 flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-slate-400"><FolderGit2 size={13} /> Type</p><p className="text-sm font-black text-[#151621] dark:text-white">{selectedProject.type}</p></div>}
+                                        {selectedProject.complexity && <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4 dark:border-white/10 dark:bg-white/5"><p className="mb-1 flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-slate-400"><Activity size={13} /> {language === 'fr' ? 'Complexité' : 'Complexity'}</p><p className="text-sm font-black text-[#151621] dark:text-white">{selectedProject.complexity}</p></div>}
+                                        {selectedProject.lastActivity && <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4 dark:border-white/10 dark:bg-white/5"><p className="mb-1 flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-slate-400"><CalendarDays size={13} /> {language === 'fr' ? 'Activité' : 'Activity'}</p><p className="text-sm font-black text-[#151621] dark:text-white">{selectedProject.lastActivity}</p></div>}
+                                    </div>
+                                )}
                                 <div className="mb-8">
                                     <h3 className="text-xs font-black text-[#b8b2b0] uppercase tracking-widest mb-3 flex items-center gap-2">{language === 'fr' ? 'À propos du projet' : 'About the Project'}<span className="h-px bg-[#b8b2b0]/20 flex-grow"></span></h3>
                                     <p className="text-slate-600 dark:text-gray-300 text-base leading-relaxed">{selectedProject.fullDescription || selectedProject.description}</p>
                                 </div>
+                                {selectedProject.features && (
+                                    <div className="mb-8">
+                                        <h3 className="text-xs font-black text-[#b8b2b0] uppercase tracking-widest mb-3">{language === 'fr' ? 'Fonctionnalités clés' : 'Key Features'}</h3>
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                            {selectedProject.features.map((feature) => (
+                                                <div key={feature} className="flex items-start gap-3 rounded-2xl border border-slate-100 bg-white p-4 text-sm text-slate-600 shadow-sm dark:border-white/10 dark:bg-white/5 dark:text-gray-300">
+                                                    <Check size={16} className="mt-0.5 shrink-0 text-[#b8b2b0]" />
+                                                    <span>{feature}</span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
                                 <div className="mb-8">
                                     <h3 className="text-xs font-black text-[#b8b2b0] uppercase tracking-widest mb-3">{language === 'fr' ? 'Technologies utilisées' : 'Technologies Used'}</h3>
                                     <div className="flex flex-wrap gap-2">{selectedProject.technologies.map((tech, i) => (<span key={i} className="px-3 py-1.5 bg-slate-100 dark:bg-white/5 text-[#151621] dark:text-white text-xs font-bold rounded-lg border border-slate-200 dark:border-white/10">{tech}</span>))}</div>
                                 </div>
+
                                 <div className="flex flex-col sm:flex-row gap-4 pt-6 border-t border-slate-100 dark:border-white/10 mt-auto">
                                    {selectedProject.githubUrl ? ( <a href={selectedProject.githubUrl} target="_blank" rel="noopener noreferrer" className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-xl bg-[#151621] dark:bg-white text-white dark:text-[#151621] font-black uppercase tracking-widest text-xs hover:opacity-90 transition-opacity shadow-lg"><Github size={18} /> GitHub</a> ) : ( <button disabled className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-xl bg-gray-100 dark:bg-white/5 text-gray-400 font-black uppercase tracking-widest text-xs cursor-not-allowed border border-dashed border-gray-300 dark:border-gray-700"><Github size={18} /> {language === 'fr' ? 'Code Privé' : 'Private Code'}</button> )}
                                    {selectedProject.demoUrl && ( <a href={selectedProject.demoUrl} target="_blank" rel="noopener noreferrer" className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-xl bg-[#b8b2b0] text-white font-black uppercase tracking-widest text-xs hover:bg-[#9f9896] transition-colors shadow-lg shadow-[#b8b2b0]/30 hover:shadow-xl hover:-translate-y-0.5"><Rocket size={18} /> {language === 'fr' ? 'Voir le projet' : 'Live Demo'}</a> )}

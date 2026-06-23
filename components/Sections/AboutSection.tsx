@@ -14,6 +14,7 @@ const AboutSection: React.FC<AboutSectionProps> = ({ language }) => {
   const navigate = useNavigate(); // 2. Initialisation du hook
 
   const jumpToTop = () => {
+    document.dispatchEvent(new WheelEvent('wheel', { deltaY: 0, cancelable: true }));
     const root = document.documentElement;
     const previousScrollBehavior = root.style.scrollBehavior;
     root.style.scrollBehavior = 'auto';

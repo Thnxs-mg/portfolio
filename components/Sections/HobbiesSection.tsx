@@ -1,29 +1,113 @@
 
 import React from 'react';
-import { HOBBIES, TRANSLATIONS } from '../../constants';
+import { TRANSLATIONS } from '../../constants';
 // Import Language type from types.ts instead of constants.ts
 import { Language } from '../../types';
 import { CapsuleDivider } from '../Shared/StyledForms';
+import { Bike, BookOpen, Camera, Code2, Music, Palette } from 'lucide-react';
 
 interface HobbiesSectionProps {
   language: Language;
 }
 
+const hobbyGroups = {
+  fr: [
+    {
+      title: 'Musique',
+      items: ['Guitare', 'Chant'],
+      icon: Music,
+    },
+    {
+      title: 'Arts & lecture',
+      items: ['Dessin', 'Lecture'],
+      icon: Palette,
+      secondaryIcon: BookOpen,
+    },
+    {
+      title: 'Sport',
+      items: ['Cyclisme', 'Volley-ball'],
+      icon: Bike,
+    },
+    {
+      title: 'Tech & image',
+      items: ['Programmation', 'Photographie'],
+      icon: Code2,
+      secondaryIcon: Camera,
+    },
+  ],
+  en: [
+    {
+      title: 'Music',
+      items: ['Guitar', 'Singing'],
+      icon: Music,
+    },
+    {
+      title: 'Art & reading',
+      items: ['Drawing', 'Reading'],
+      icon: Palette,
+      secondaryIcon: BookOpen,
+    },
+    {
+      title: 'Sport',
+      items: ['Cycling', 'Volleyball'],
+      icon: Bike,
+    },
+    {
+      title: 'Tech & image',
+      items: ['Programming', 'Photography'],
+      icon: Code2,
+      secondaryIcon: Camera,
+    },
+  ],
+};
+
 const HobbiesSection: React.FC<HobbiesSectionProps> = ({ language }) => {
   const t = TRANSLATIONS[language];
+
   return (
     <section id="hobbies" className="py-24 px-6">
       <div className="max-w-5xl mx-auto">
         <CapsuleDivider className="mb-8 w-fit mx-auto md:mx-0">
           {t.sections.hobbies}
         </CapsuleDivider>
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8">
-          {HOBBIES[language].map((hobby, idx) => (
-            <div key={idx} className="p-10 rounded-3xl border border-[#BDC3C7]/30 dark:border-white/10 shadow-sm flex flex-col items-center justify-center text-center hover:border-[#b8b2b0] dark:hover:border-[#b8b2b0] transition-all group">
-              <div className="w-2 h-10 bg-[#b8b2b0] mb-6 rounded-full group-hover:w-10 transition-all duration-500"></div>
-              <p className="text-[#151621] dark:text-white font-black text-lg uppercase tracking-tight">{hobby}</p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 sm:gap-6">
+          {hobbyGroups[language].map((group) => {
+            const Icon = group.icon;
+            const SecondaryIcon = group.secondaryIcon;
+
+            return (
+            <div
+              key={group.title}
+              className="group rounded-3xl border border-[#BDC3C7]/30 dark:border-white/10 bg-white/70 dark:bg-white/[0.03] p-6 shadow-sm hover:shadow-xl hover:-translate-y-1 hover:border-[#b8b2b0] dark:hover:border-[#b8b2b0] transition-all duration-300"
+            >
+              <div className="mb-6 flex items-center justify-between">
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#151621] text-white dark:bg-white dark:text-[#151621] shadow-md group-hover:bg-[#b8b2b0] group-hover:text-white transition-colors">
+                  <Icon size={22} />
+                </div>
+                {SecondaryIcon && (
+                  <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#b8b2b0]/15 text-[#b8b2b0]">
+                    <SecondaryIcon size={18} />
+                  </div>
+                )}
+              </div>
+
+              <h3 className="text-[#151621] dark:text-white font-black text-base uppercase tracking-widest mb-4">
+                {group.title}
+              </h3>
+
+              <div className="flex flex-wrap gap-2">
+                {group.items.map((item) => (
+                  <span
+                    key={item}
+                    className="rounded-full bg-slate-100 dark:bg-white/10 px-3 py-1.5 text-xs font-bold text-slate-600 dark:text-gray-300"
+                  >
+                    {item}
+                  </span>
+                ))}
+              </div>
             </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     </section>

@@ -1,6 +1,6 @@
 {
   "name": "jason-chris",
-  "homepage": "https://RdjcMada.github.io/jason-chris-portfolio",
+  "homepage": "https://Thnxs-mg.github.io/jason-chris-portfolio",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -8,6 +8,8 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
+    "analyze:projects": "node scripts/analyze-local-projects.mjs",
+    "fetch:github-profile": "node scripts/fetch-github-profile.mjs",
     "predeploy": "npm run build",
     "deploy": "gh-pages -d dist"
   },
@@ -22,7 +24,10 @@
   "devDependencies": {
     "@types/node": "^22.14.0",
     "@vitejs/plugin-react": "^5.0.0",
+    "autoprefixer": "^10.5.0",
     "gh-pages": "^6.3.0",
+    "postcss": "^8.5.14",
+    "tailwindcss": "^3.4.17",
     "typescript": "~5.8.2",
     "vite": "^6.2.0"
   }

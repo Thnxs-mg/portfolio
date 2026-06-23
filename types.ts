@@ -4,12 +4,16 @@
 export interface GitHubRepo {
   id: number;
   name: string;
-  description: string;
+  description: string | null;
   html_url: string;
-  homepage: string;
+  homepage: string | null;
   stargazers_count: number;
-  language: string;
+  forks_count: number;
+  language: string | null;
   updated_at: string;
+  pushed_at: string;
+  languages_url: string;
+  fork: boolean;
 }
 
 export interface GitHubUser {
@@ -45,11 +49,19 @@ export interface AcademicProject {
 
 // --- NOUVEAU TYPE : PROJETS RÉALISÉS (Pour la page AllProjectsPage) ---
 export interface Project {
+  slug?: string;
   title: string;
   description: string;
   fullDescription?: string;
   technologies: string[];
   category: 'professional' | 'personal' | 'academic';
+  type?: string;
+  features?: string[];
+  complexity?: string;
+  status?: string;
+  lastActivity?: string;
+  repositoryState?: string;
+  evidence?: string[];
   githubUrl?: string;
   demoUrl?: string;
   imageUrl?: string; // <--- NOUVEAU CHAMP

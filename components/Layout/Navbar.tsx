@@ -29,6 +29,15 @@ const Navbar: React.FC<NavbarProps> = ({ language, setLanguage, isDark, toggleTh
     { name: t.nav.projects, href: '/realisations' },
   ];
 
+  const jumpToTop = () => {
+    document.dispatchEvent(new WheelEvent('wheel', { deltaY: 0, cancelable: true }));
+    const root = document.documentElement;
+    const previousScrollBehavior = root.style.scrollBehavior;
+    root.style.scrollBehavior = 'auto';
+    window.scrollTo(0, 0);
+    root.style.scrollBehavior = previousScrollBehavior;
+  };
+
   // --- LOGIQUE DE DÉTECTION DU SCROLL ---
   useEffect(() => {
     // Si on est sur la page Projets, on force l'état actif sur le lien Projets
@@ -72,7 +81,6 @@ const Navbar: React.FC<NavbarProps> = ({ language, setLanguage, isDark, toggleTh
       setActiveSection(targetId);
 
       if (location.pathname === '/') {
-        window.dispatchEvent(new CustomEvent('portfolio:section-change'));
         scroller.scrollTo(targetId, {
           smooth: true,
           duration: 420,

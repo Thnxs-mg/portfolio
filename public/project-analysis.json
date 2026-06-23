@@ -1,0 +1,448 @@
+{
+  "generatedAt": "2026-05-19T12:37:25.910Z",
+  "projects": [
+    {
+      "name": "aurora_management_v2",
+      "path": "/home/thnxs/my_pc/project/aurora_management_v2",
+      "stack": [
+        "Django",
+        "Django REST Framework",
+        "Framer Motion",
+        "MUI",
+        "PostgreSQL",
+        "React",
+        "React Query",
+        "React Router",
+        "Recharts",
+        "Tailwind CSS",
+        "TypeScript",
+        "Vite",
+        "Zustand"
+      ],
+      "features": [
+        "Authentication / users",
+        "Stock / inventory",
+        "Sales / billing",
+        "Dashboard / analytics",
+        "Imports / exports",
+        "Uploads / media"
+      ],
+      "readmes": [
+        "README.md",
+        "frontend/README.md"
+      ],
+      "manifests": [
+        "backend/manage.py",
+        "backend/requirements.txt",
+        "frontend/package.json",
+        "frontend/vite.config.ts"
+      ],
+      "visualAssets": [
+        {
+          "path": "frontend/src/assets/logo_simple.png",
+          "score": 3
+        },
+        {
+          "path": "frontend/src/assets/logo.png",
+          "score": 3
+        }
+      ],
+      "git": {
+        "lastCommit": "2026-05-18T07:31:04+03:00 scroll-up features",
+        "dirtyFiles": 0
+      }
+    },
+    {
+      "name": "blue_hotel_management",
+      "path": "/home/thnxs/my_pc/project/blue_hotel_management",
+      "stack": [
+        "Django",
+        "Django REST Framework",
+        "Framer Motion",
+        "MUI",
+        "PostgreSQL",
+        "React",
+        "React Query",
+        "React Router",
+        "Recharts",
+        "Tailwind CSS",
+        "TypeScript",
+        "Vite"
+      ],
+      "features": [
+        "Authentication / users",
+        "Stock / inventory",
+        "Sales / billing",
+        "Planning / booking",
+        "Dashboard / analytics",
+        "Imports / exports",
+        "Uploads / media"
+      ],
+      "readmes": [
+        "README.md",
+        "back_end/staticfiles/admin/img/README.md",
+        "front_end/README.md"
+      ],
+      "manifests": [
+        "back_end/manage.py",
+        "back_end/package.json",
+        "back_end/requirements.txt",
+        "front_end/package.json",
+        "front_end/vite.config.ts"
+      ],
+      "visualAssets": [
+        {
+          "path": "back_end/staticfiles/admin/img/calendar-icons.svg",
+          "score": 3
+        },
+        {
+          "path": "back_end/staticfiles/admin/img/icon-addlink.svg",
+          "score": 3
+        },
+        {
+          "path": "back_end/staticfiles/admin/img/icon-alert-dark.svg",
+          "score": 3
+        },
+        {
+          "path": "back_end/staticfiles/admin/img/icon-alert.svg",
+          "score": 3
+        },
+        {
+          "path": "back_end/staticfiles/admin/img/icon-calendar.svg",
+          "score": 3
+        },
+        {
+          "path": "back_end/staticfiles/admin/img/icon-changelink.svg",
+          "score": 3
+        },
+        {
+          "path": "back_end/staticfiles/admin/img/icon-clock.svg",
+          "score": 3
+        },
+        {
+          "path": "back_end/staticfiles/admin/img/icon-debug-dark.svg",
+          "score": 3
+        }
+      ],
+      "git": {
+        "lastCommit": "2026-05-06T15:45:10+03:00 update occupation manager",
+        "dirtyFiles": 0
+      }
+    },
+    {
+      "name": "cyber_aurora_management",
+      "path": "/home/thnxs/my_pc/project/cyber_aurora_management",
+      "stack": [
+        "Django",
+        "Framer Motion",
+        "React",
+        "React Router",
+        "Tailwind CSS",
+        "TypeScript",
+        "Vite"
+      ],
+      "features": [
+        "Authentication / users",
+        "Stock / inventory",
+        "Sales / billing",
+        "Dashboard / analytics",
+        "Uploads / media"
+      ],
+      "readmes": [
+        "frontend/README.md"
+      ],
+      "manifests": [
+        "backend/manage.py",
+        "frontend/package.json",
+        "frontend/vite.config.ts"
+      ],
+      "visualAssets": [
+        {
+          "path": "assets/finale_logo].png",
+          "score": 3
+        },
+        {
+          "path": "frontend/public/logo.png",
+          "score": 3
+        },
+        {
+          "path": "assets/WhatsApp Image 2026-02-09 at 08.56.51.jpeg",
+          "score": 1
+        },
+        {
+          "path": "assets/WhatsApp Image 2026-02-18 at 11.38.26.jpeg",
+          "score": 1
+        },
+        {
+          "path": "frontend/public/vite.svg",
+          "score": 1
+        },
+        {
+          "path": "frontend/src/assets/react.svg",
+          "score": 1
+        }
+      ],
+      "git": {
+        "lastCommit": "2026-02-26T15:32:59+03:00 last_change",
+        "dirtyFiles": 31
+      }
+    },
+    {
+      "name": "kera_design",
+      "path": "/home/thnxs/my_pc/project/kera_design",
+      "stack": [
+        "Express",
+        "Motion",
+        "Prisma",
+        "React",
+        "React Query",
+        "React Router",
+        "Tailwind CSS",
+        "TypeScript",
+        "Vite",
+        "Zustand"
+      ],
+      "features": [
+        "Authentication / users",
+        "Sales / billing",
+        "Dashboard / analytics",
+        "Imports / exports",
+        "Uploads / media"
+      ],
+      "readmes": [
+        "README.md",
+        "backend/README.md",
+        "frontend/README.md"
+      ],
+      "manifests": [
+        "backend/package.json",
+        "docker-compose.yml",
+        "frontend/package.json",
+        "frontend/vite.config.ts"
+      ],
+      "visualAssets": [
+        {
+          "path": "frontend/favicon.png",
+          "score": 3
+        },
+        {
+          "path": "frontend/favicon.svg",
+          "score": 3
+        },
+        {
+          "path": "frontend/src/assets/logo_krea.jpeg",
+          "score": 3
+        },
+        {
+          "path": "frontend/src/assets/logo_krea.optimized.webp",
+          "score": 3
+        },
+        {
+          "path": "frontend/src/assets/logo.optimized.webp",
+          "score": 3
+        },
+        {
+          "path": "frontend/src/assets/logo.png",
+          "score": 3
+        },
+        {
+          "path": "frontend/src/assets/background_proformat.optimized.webp",
+          "score": 2
+        },
+        {
+          "path": "frontend/src/assets/background_proformat.png",
+          "score": 2
+        }
+      ],
+      "git": {
+        "lastCommit": "2026-05-13T09:29:17+03:00 fix_bugs_request",
+        "dirtyFiles": 0
+      }
+    },
+    {
+      "name": "moto-land-erp",
+      "path": "/home/thnxs/my_pc/project/moto-land-erp",
+      "stack": [
+        "Express",
+        "Google GenAI",
+        "Motion",
+        "Prisma",
+        "React",
+        "React Query",
+        "React Router",
+        "Recharts",
+        "Socket.IO",
+        "Tailwind CSS",
+        "TypeScript",
+        "Vite"
+      ],
+      "features": [
+        "Authentication / users",
+        "Stock / inventory",
+        "Sales / billing",
+        "Dashboard / analytics",
+        "Uploads / media"
+      ],
+      "readmes": [
+        "README.md",
+        "backend/README.md",
+        "backend/prisma/scale/README.md",
+        "frontend/README.md"
+      ],
+      "manifests": [
+        "backend/package.json",
+        "frontend/package.json",
+        "frontend/vite.config.ts"
+      ],
+      "visualAssets": [
+        {
+          "path": "frontend/public/Logo.png",
+          "score": 3
+        }
+      ],
+      "git": {
+        "lastCommit": "2026-05-13T13:49:16+03:00 changes",
+        "dirtyFiles": 2
+      }
+    },
+    {
+      "name": "portfolio",
+      "path": "/home/thnxs/my_pc/project/portfolio",
+      "stack": [
+        "React",
+        "React Router",
+        "Tailwind CSS",
+        "TypeScript",
+        "Vite"
+      ],
+      "features": [
+        "Imports / exports",
+        "Uploads / media"
+      ],
+      "readmes": [
+        "README.md"
+      ],
+      "manifests": [
+        "package.json",
+        "vite.config.ts"
+      ],
+      "visualAssets": [
+        {
+          "path": "assets/icon_logo.png",
+          "score": 3
+        },
+        {
+          "path": "assets/my_logo/android-chrome-192x192.png",
+          "score": 3
+        },
+        {
+          "path": "assets/my_logo/android-chrome-512x512.png",
+          "score": 3
+        },
+        {
+          "path": "assets/my_logo/apple-touch-icon.png",
+          "score": 3
+        },
+        {
+          "path": "assets/my_logo/favicon-16x16.png",
+          "score": 3
+        },
+        {
+          "path": "assets/my_logo/favicon-32x32.png",
+          "score": 3
+        },
+        {
+          "path": "assets/my_logo/favicon-jc.svg",
+          "score": 3
+        },
+        {
+          "path": "assets/my_logo/favicon.ico",
+          "score": 3
+        }
+      ],
+      "git": {
+        "lastCommit": "2026-05-09T10:07:55+03:00 Add launch script",
+        "dirtyFiles": 29
+      }
+    },
+    {
+      "name": "spat",
+      "path": "/home/thnxs/my_pc/project/spat",
+      "stack": [
+        "Express",
+        "Google GenAI",
+        "Motion",
+        "React",
+        "React Router",
+        "Recharts",
+        "Tailwind CSS",
+        "TypeScript",
+        "Vite"
+      ],
+      "features": [
+        "Authentication / users",
+        "Planning / booking",
+        "Dashboard / analytics",
+        "Imports / exports",
+        "Uploads / media"
+      ],
+      "readmes": [
+        "frontend/README.md"
+      ],
+      "manifests": [
+        "docker-compose.yml",
+        "frontend/package.json",
+        "frontend/vite.config.ts"
+      ],
+      "visualAssets": [
+        {
+          "path": "autre/logo.png",
+          "score": 3
+        },
+        {
+          "path": "frontend/public/logo.png",
+          "score": 3
+        },
+        {
+          "path": "frontend/src/assets/logo.png",
+          "score": 3
+        },
+        {
+          "path": "autre/dashboard.jpg",
+          "score": 2
+        }
+      ],
+      "git": {
+        "lastCommit": "2026-04-21T11:11:41+03:00 changes",
+        "dirtyFiles": 31
+      }
+    },
+    {
+      "name": "valentins_day",
+      "path": "/home/thnxs/my_pc/project/valentins_day",
+      "stack": [
+        "Framer Motion",
+        "Google GenAI",
+        "React",
+        "React Router",
+        "TypeScript",
+        "Vite"
+      ],
+      "features": [
+        "Authentication / users"
+      ],
+      "readmes": [
+        "README.md"
+      ],
+      "manifests": [
+        "package.json",
+        "vite.config.ts"
+      ],
+      "visualAssets": [],
+      "git": {
+        "lastCommit": "2026-02-23T09:39:38+03:00 last version",
+        "dirtyFiles": 0
+      }
+    }
+  ]
+}

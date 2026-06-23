@@ -1,4 +1,4 @@
-import React, { useCallback, useRef, useState, useEffect } from 'react';
+import React, { useState, useEffect, useLayoutEffect } from 'react';
 // 1. Import des composants de Routing
 import { BrowserRouter as Router, Routes, Route, useLocation, useNavigate, Link } from 'react-router-dom';
 import { scroller } from 'react-scroll';
@@ -26,43 +26,11 @@ const HomePage: React.FC<{ language: Language }> = ({ language }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const targetSection = (location.state as NavigationState | null)?.scrollTo;
-  const [isSectionTransitioning, setIsSectionTransitioning] = useState(false);
-  const sectionTransitionTimeout = useRef<number | null>(null);
-
-  const runSectionTransition = useCallback(() => {
-    if (sectionTransitionTimeout.current) {
-      window.clearTimeout(sectionTransitionTimeout.current);
-    }
-
-    setIsSectionTransitioning(false);
-
-    requestAnimationFrame(() => {
-      setIsSectionTransitioning(true);
-      sectionTransitionTimeout.current = window.setTimeout(() => {
-        setIsSectionTransitioning(false);
-      }, 180);
-    });
-  }, []);
-
-  useEffect(() => {
-    const handleSectionChange = () => runSectionTransition();
-
-    window.addEventListener('portfolio:section-change', handleSectionChange);
-
-    return () => {
-      window.removeEventListener('portfolio:section-change', handleSectionChange);
-      if (sectionTransitionTimeout.current) {
-        window.clearTimeout(sectionTransitionTimeout.current);
-      }
-    };
-  }, [runSectionTransition]);
 
   useEffect(() => {
     if (!targetSection) return;
 
     requestAnimationFrame(() => {
-      runSectionTransition();
-
       scroller.scrollTo(targetSection, {
         smooth: true,
         duration: 420,
@@ -71,12 +39,12 @@ const HomePage: React.FC<{ language: Language }> = ({ language }) => {
 
       navigate('.', { replace: true, state: null });
     });
-  }, [targetSection, navigate, runSectionTransition]);
+  }, [targetSection, navigate]);
 
   return (
     <>
       <HeroSection language={language} />
-      <div className={`space-y-0 ${isSectionTransitioning ? 'section-transition' : ''}`}>
+      <div className="space-y-0">
         <AboutSection language={language} />
         <SkillsSection language={language} />
         <ActiviteGithub language={language} />
@@ -116,14 +84,19 @@ const NotFoundPage: React.FC<{ language: Language }> = ({ language }) => (
 
 const AnimatedRoutes: React.FC<{ language: Language }> = ({ language }) => {
   const location = useLocation();
-  const isProjectsPage = location.pathname === '/realisations' || location.pathname === '/projects';
+
+  // Scroll to top synchronously before browser paint on every route change.
+  // useLayoutEffect fires after DOM mutations but before the browser paints
+  // → no visible scroll snap, smooth transition start from top every time.
+  useLayoutEffect(() => {
+    window.scrollTo(0, 0);
+  }, [location.pathname]);
 
   return (
-    <div key={location.pathname} className={isProjectsPage ? undefined : 'page-transition'}>
+    <div key={location.pathname} className="page-transition">
       <Routes location={location}>
         <Route path="/" element={<HomePage language={language} />} />
         <Route path="/realisations" element={<AllProjectsPage language={language} />} />
-        <Route path="/projects" element={<AllProjectsPage language={language} />} />
         <Route path="*" element={<NotFoundPage language={language} />} />
       </Routes>
     </div>

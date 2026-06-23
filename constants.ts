@@ -1,8 +1,7 @@
-import { Experience, AcademicProject, Project, Translations } from './types';
-import hotelOverviewImage from './assets/Overview.png';
-import erpWorkspaceImage from './assets/workspace_finale.png';
+import { Experience, AcademicProject, Translations } from './types';
+import { GENERATED_PROJECTS } from './data/generatedProjects';
 
-export const GITHUB_USERNAME = 'RdjcMada';
+export const GITHUB_USERNAME = 'Thnxs-mg';
 
 export const PERSONAL_INFO = {
   fullName: 'RANDRIAMAHERY JASON CHRIS',
@@ -81,71 +80,33 @@ export const ACADEMIC_PROJECTS: Record<'fr' | 'en', AcademicProject[]> = {
   ]
 };
 
-// --- NOUVELLE LISTE DÉTAILLÉE (Utilisée dans AllProjectsPage) ---
-export const REALIZED_PROJECTS: Record<'fr' | 'en', Project[]> = {
-  fr: [
-    {
-      title: 'Hôtel Blue Management',
-      description: 'Système complet de gestion hôtelière.',
-      fullDescription: 'Développement d\'une plateforme interactive complète pour la gestion hôtelière. Le système inclut un planning dynamique en temps réel pour les réceptions, un moteur de réservation intelligent qui empêche les conflits, une facturation PDF automatique et des tableaux de bord financiers détaillés.',
-      technologies: ['Django REST', 'React', 'TypeScript', 'PostgreSQL', 'Tailwind'],
-      category: 'professional',
-      imageUrl: hotelOverviewImage,
-      // githubUrl: '...' (Projet privé probablement)
-    },
-    {
-      title: 'Gestion RH (ERPNext)',
-      description: 'Module personnalisé pour l\'ERP open-source ERPNext.',
-      fullDescription: 'Création d\'une application personnalisée au sein de l\'écosystème Frappe/ERPNext. Extension des DocTypes standards pour gérer les congés spécifiques, les évaluations de performance et l\'automatisation de la paie selon les normes locales.',
-      technologies: ['Python', 'Frappe', 'MariaDB', 'ERPNext'],
-      category: 'academic',
-      imageUrl: erpWorkspaceImage,
-    }
-  ],
-  en: [
-    {
-      title: 'Hotel Blue Management',
-      description: 'Complete hotel management system.',
-      fullDescription: 'Development of a comprehensive interactive platform for hotel management. The system includes a real-time dynamic schedule for receptions, a smart booking engine preventing conflicts, automated PDF invoicing, and detailed financial dashboards.',
-      technologies: ['Django REST', 'React', 'TypeScript', 'PostgreSQL', 'Tailwind'],
-      category: 'professional',
-      imageUrl: hotelOverviewImage,
-    },
-    {
-      title: 'HR Management (ERPNext)',
-      description: 'Custom module for ERPNext.',
-      fullDescription: 'Creation of a custom application within the Frappe/ERPNext ecosystem. Extension of standard DocTypes to handle specific leaves, performance evaluations, and payroll automation according to local standards.',
-      technologies: ['Python', 'Frappe', 'MariaDB', 'ERPNext'],
-      category: 'academic',
-      imageUrl: erpWorkspaceImage,
-    }
-  ]
-};
+// --- PROJETS GÉNÉRÉS DEPUIS /home/thnxs/my_pc/project ---
+export const REALIZED_PROJECTS = GENERATED_PROJECTS;
 
 // --- EDUCATION ---
 export const EDUCATION: Record<'fr' | 'en', any[]> = {
   fr: [
     {
-      degree: 'Licence en informatique (en cours)',
+      degree: 'Licence en informatique',
       school: 'IT University',
       details: ''
     },
     {
       degree: 'Diplôme d’études secondaires',
       school: '2022',
-      details: 'Mention “Assez Bien”'
+      details: ''
     }
   ],
   en: [
     {
-      degree: 'Bachelor in Computer Science (Ongoing)',
+      degree: 'Bachelor in Computer Science',
       school: 'IT University',
       details: ''
     },
     {
       degree: 'High School Diploma',
       school: '2022',
-      details: 'Mention "Fairly Well"'
+      details: ''
     }
   ]
 };

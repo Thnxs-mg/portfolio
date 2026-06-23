@@ -14,6 +14,7 @@ const HeroSection: React.FC<HeroSectionProps> = ({ language }) => {
   const navigate = useNavigate();
 
   const jumpToTop = () => {
+    document.dispatchEvent(new WheelEvent('wheel', { deltaY: 0, cancelable: true }));
     const root = document.documentElement;
     const previousScrollBehavior = root.style.scrollBehavior;
     root.style.scrollBehavior = 'auto';

@@ -1,0 +1,34 @@
+name: Update GitHub Contributions
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 3 * * *'
+
+permissions:
+  contents: write
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Fetch contribution calendar
+        env:
+          GH_CONTRIBUTIONS_TOKEN: ${{ secrets.GH_CONTRIBUTIONS_TOKEN }}
+          GITHUB_USERNAME: Thnxs-mg
+        run: node scripts/fetch-github-contributions.mjs
+
+      - name: Commit updated contribution data
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: 'chore: update GitHub contribution data'
+          file_pattern: public/github-contributions.json
