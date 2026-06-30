@@ -14,8 +14,9 @@ export const BlobBottomLeft: React.FC = () => (
 );
 
 export const CapsuleDivider: React.FC<{ className?: string; children: React.ReactNode }> = ({ className = "", children }) => (
-  <div className={`h-10 bg-[#151621] dark:bg-[#b8b2b0] rounded-full flex items-center justify-center text-white font-bold uppercase tracking-widest text-sm px-8 shadow-lg ${className}`}>
-    {children}
+  <div className={`brand-font relative h-10 overflow-hidden rounded-full bg-[#151621] px-8 text-sm font-black uppercase tracking-widest text-white shadow-lg shadow-[#151621]/10 dark:bg-[#b8b2b0] ${className}`}>
+    <span className="absolute inset-y-0 left-0 w-10 bg-white/15 blur-xl" />
+    <span className="relative flex h-full items-center justify-center">{children}</span>
   </div>
 );
 

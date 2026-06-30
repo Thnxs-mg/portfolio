@@ -143,8 +143,27 @@ export function useGitHubContributions(username: string) {
         setLoading(true);
         setError(null);
 
+        // Try to load from cache first
+        const cacheKey = `github-contributions-${username}`;
+        const cached = localStorage.getItem(cacheKey);
+
+        if (cached) {
+          try {
+            const cachedData = JSON.parse(cached) as StaticGitHubContributionsResponse;
+            if (hasUsableStaticData(cachedData, username)) {
+              const result = normalizeStaticResponse(cachedData);
+              if (isMounted) {
+                setWeeks(result.weeks);
+                setTotal(result.total);
+                setLoading(false);
+              }
+            }
+          } catch {
+            // Invalid cache, ignore
+          }
+        }
+
         const staticResponse = await fetch(`${import.meta.env.BASE_URL}github-contributions.json`, {
-          cache: 'no-store',
           signal: controller.signal,
         });
 
@@ -159,12 +178,19 @@ export function useGitHubContributions(username: string) {
             const result = normalizeStaticResponse(staticData);
             setWeeks(result.weeks);
             setTotal(result.total);
+
+            // Cache the data for future loads
+            try {
+              localStorage.setItem(cacheKey, JSON.stringify(staticData));
+            } catch {
+              // Storage full or not available, ignore
+            }
             return;
           }
         }
 
         const response = await fetch(
-          `https://github-contributions-api.jogruber.de/v4/${encodeURIComponent(username)}?y=last`,
+          `https://github-contributions-api.jogruber.de/v4/${encodeURIComponent(username)}`,
           { signal: controller.signal }
         );
 

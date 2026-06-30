@@ -4,7 +4,21 @@ import path from 'node:path';
 const username = process.env.GITHUB_USERNAME || 'Thnxs-mg';
 const token = process.env.GH_CONTRIBUTIONS_TOKEN;
 const outputPath = process.env.CONTRIBUTIONS_OUTPUT || 'public/github-contributions.json';
+const requestTimeoutMs = Number(process.env.GITHUB_REQUEST_TIMEOUT_MS || 15_000);
 const contributionColors = ['#ebedf0', '#9be9a8', '#40c463', '#30a14e', '#216e39'];
+
+if (process.argv.includes('--help')) {
+  console.log(`
+Usage: npm run fetch:github-contributions
+
+Environment:
+  GITHUB_USERNAME              GitHub login to fetch. Defaults to Thnxs-mg.
+  GH_CONTRIBUTIONS_TOKEN       Optional GitHub token for GraphQL contributions.
+  CONTRIBUTIONS_OUTPUT         Output JSON path. Defaults to public/github-contributions.json.
+  GITHUB_REQUEST_TIMEOUT_MS    Request timeout in milliseconds. Defaults to 15000.
+`);
+  process.exit(0);
+}
 
 const query = `
   query($login: String!) {
@@ -26,22 +40,47 @@ const query = `
   }
 `;
 
+async function withTimeout(operation, label) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), requestTimeoutMs);
+
+  try {
+    return await operation(controller.signal);
+  } catch (error) {
+    if (error?.name === 'AbortError') {
+      throw new Error(`${label} timed out after ${requestTimeoutMs}ms`);
+    }
+    throw error;
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
 async function fetchFromGraphQL() {
-  const response = await fetch('https://api.github.com/graphql', {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${token}`,
-      'Content-Type': 'application/json',
-      'User-Agent': 'portfolio-contributions-fetcher',
-    },
-    body: JSON.stringify({
-      query,
-      variables: { login: username },
+  const response = await withTimeout(
+    (signal) => fetch('https://api.github.com/graphql', {
+      method: 'POST',
+      signal,
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+        'User-Agent': 'portfolio-contributions-fetcher',
+      },
+      body: JSON.stringify({
+        query,
+        variables: { login: username },
+      }),
     }),
-  });
+    'GitHub GraphQL contributions request'
+  );
 
   if (!response.ok) {
-    throw new Error(`GitHub GraphQL request failed: ${response.status} ${response.statusText}`);
+    const remaining = response.headers.get('x-ratelimit-remaining');
+    const reset = response.headers.get('x-ratelimit-reset');
+    throw new Error(
+      `GitHub GraphQL request failed: ${response.status} ${response.statusText} ` +
+      `(rate remaining: ${remaining ?? 'n/a'}, reset: ${reset ?? 'n/a'})`
+    );
   }
 
   const result = await response.json();
@@ -60,8 +99,12 @@ async function fetchFromGraphQL() {
 }
 
 async function fetchFromPublicFallback() {
-  const response = await fetch(
-    `https://github-contributions-api.jogruber.de/v4/${encodeURIComponent(username)}?y=last`
+  const response = await withTimeout(
+    (signal) => fetch(
+      `https://github-contributions-api.jogruber.de/v4/${encodeURIComponent(username)}?y=last`,
+      { signal }
+    ),
+    'Public contribution fallback'
   );
 
   if (!response.ok) {

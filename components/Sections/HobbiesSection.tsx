@@ -5,6 +5,7 @@ import { TRANSLATIONS } from '../../constants';
 import { Language } from '../../types';
 import { CapsuleDivider } from '../Shared/StyledForms';
 import { Bike, BookOpen, Camera, Code2, Music, Palette } from 'lucide-react';
+import { useRevealOnScroll } from '../../hooks/useRevealOnScroll';
 
 interface HobbiesSectionProps {
   language: Language;
@@ -63,11 +64,12 @@ const hobbyGroups = {
 
 const HobbiesSection: React.FC<HobbiesSectionProps> = ({ language }) => {
   const t = TRANSLATIONS[language];
+  const revealRef = useRevealOnScroll<HTMLElement>();
 
   return (
-    <section id="hobbies" className="py-24 px-6">
+    <section ref={revealRef} id="hobbies" className="py-24 px-6">
       <div className="max-w-5xl mx-auto">
-        <CapsuleDivider className="mb-8 w-fit mx-auto md:mx-0">
+        <CapsuleDivider className="portfolio-reveal mb-8 w-fit mx-auto md:mx-0">
           {t.sections.hobbies}
         </CapsuleDivider>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 sm:gap-6">
@@ -78,7 +80,7 @@ const HobbiesSection: React.FC<HobbiesSectionProps> = ({ language }) => {
             return (
             <div
               key={group.title}
-              className="group rounded-3xl border border-[#BDC3C7]/30 dark:border-white/10 bg-white/70 dark:bg-white/[0.03] p-6 shadow-sm hover:shadow-xl hover:-translate-y-1 hover:border-[#b8b2b0] dark:hover:border-[#b8b2b0] transition-all duration-300"
+              className="portfolio-reveal group rounded-3xl border border-[#BDC3C7]/30 bg-white/70 p-6 shadow-sm transition-all duration-300 hover:-translate-y-1.5 hover:border-[#b8b2b0] hover:shadow-xl hover:shadow-[#b8b2b0]/10 dark:border-white/10 dark:bg-white/[0.03] dark:hover:border-[#b8b2b0]"
             >
               <div className="mb-6 flex items-center justify-between">
                 <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#151621] text-white dark:bg-white dark:text-[#151621] shadow-md group-hover:bg-[#b8b2b0] group-hover:text-white transition-colors">

@@ -4,6 +4,24 @@ import path from 'node:path';
 
 const username = process.env.GITHUB_USERNAME || 'Thnxs-mg';
 const outputPath = process.env.GITHUB_PROFILE_OUTPUT || 'public/github-profile.json';
+const requestTimeoutMs = Number(process.env.GITHUB_REQUEST_TIMEOUT_MS || 15_000);
+const languageConcurrency = Number(process.env.GITHUB_LANGUAGE_CONCURRENCY || 6);
+
+if (process.argv.includes('--help')) {
+  console.log(`
+Usage: npm run fetch:github-profile
+
+Environment:
+  GITHUB_USERNAME                  GitHub login to fetch. Defaults to Thnxs-mg.
+  GITHUB_TOKEN/GH_TOKEN            GitHub token. Falls back to gh auth token.
+  GH_PROFILE_TOKEN                 Alternate token variable.
+  GITHUB_PROFILE_OUTPUT            Output JSON path. Defaults to public/github-profile.json.
+  GITHUB_REQUEST_TIMEOUT_MS        Request timeout in milliseconds. Defaults to 15000.
+  GITHUB_LANGUAGE_CONCURRENCY      Concurrent language requests. Defaults to 6.
+`);
+  process.exit(0);
+}
+
 const languageColors = {
   TypeScript: '#3178c6',
   JavaScript: '#f1e05a',
@@ -35,32 +53,51 @@ function getToken() {
   }
 }
 
+function githubHeaders(token) {
+  return {
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    Accept: 'application/vnd.github+json',
+    'X-GitHub-Api-Version': '2022-11-28',
+    'User-Agent': 'portfolio-github-profile-fetcher',
+  };
+}
+
+async function withTimeout(operation, label) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), requestTimeoutMs);
+
+  try {
+    return await operation(controller.signal);
+  } catch (error) {
+    if (error?.name === 'AbortError') {
+      throw new Error(`${label} timed out after ${requestTimeoutMs}ms`);
+    }
+    throw error;
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
 async function githubFetch(url, token) {
-  const response = await fetch(url, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-      Accept: 'application/vnd.github+json',
-      'X-GitHub-Api-Version': '2022-11-28',
-      'User-Agent': 'portfolio-github-profile-fetcher',
-    },
-  });
+  const response = await withTimeout(
+    (signal) => fetch(url, { headers: githubHeaders(token), signal }),
+    url
+  );
 
   if (!response.ok) {
-    throw new Error(`${url} failed: ${response.status} ${response.statusText}`);
+    const remaining = response.headers.get('x-ratelimit-remaining');
+    const reset = response.headers.get('x-ratelimit-reset');
+    throw new Error(`${url} failed: ${response.status} ${response.statusText} (rate remaining: ${remaining ?? 'n/a'}, reset: ${reset ?? 'n/a'})`);
   }
 
   return response.json();
 }
 
 async function githubFetchWithHeaders(url, token) {
-  const response = await fetch(url, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-      Accept: 'application/vnd.github+json',
-      'X-GitHub-Api-Version': '2022-11-28',
-      'User-Agent': 'portfolio-github-profile-fetcher',
-    },
-  });
+  const response = await withTimeout(
+    (signal) => fetch(url, { headers: githubHeaders(token), signal }),
+    url
+  );
 
   if (!response.ok) {
     throw new Error(`${url} failed: ${response.status} ${response.statusText}`);
@@ -85,6 +122,22 @@ async function fetchAllPages(url, token) {
   }
 
   return items;
+}
+
+async function mapLimit(items, limit, mapper) {
+  const results = [];
+  let cursor = 0;
+
+  async function worker() {
+    while (cursor < items.length) {
+      const index = cursor;
+      cursor += 1;
+      results[index] = await mapper(items[index], index);
+    }
+  }
+
+  await Promise.all(Array.from({ length: Math.min(limit, items.length) }, worker));
+  return results;
 }
 
 function getLastPageFromLink(linkHeader) {
@@ -144,15 +197,17 @@ const [user, repos] = await Promise.all([
 const ownedRepos = repos.filter((repo) => repo.owner?.login?.toLowerCase() === username.toLowerCase() && !repo.fork);
 const languageTotals = new Map();
 
-for (const repo of ownedRepos) {
-  if (!repo.languages_url) continue;
+const ownedRepoLanguages = await mapLimit(
+  ownedRepos.filter((repo) => repo.languages_url),
+  languageConcurrency,
+  async (repo) => githubFetch(repo.languages_url, token)
+);
 
-  const languages = await githubFetch(repo.languages_url, token);
-
+ownedRepoLanguages.forEach((languages) => {
   Object.entries(languages).forEach(([name, bytes]) => {
     languageTotals.set(name, (languageTotals.get(name) ?? 0) + bytes);
   });
-}
+});
 
 const sortedByActivity = [...ownedRepos].sort((a, b) => {
   const dateA = new Date(a.pushed_at ?? a.updated_at).getTime();
@@ -160,7 +215,7 @@ const sortedByActivity = [...ownedRepos].sort((a, b) => {
   return dateB - dateA;
 });
 
-const repositories = await Promise.all(sortedByActivity.map(async (repo) => {
+const repositories = await mapLimit(sortedByActivity, languageConcurrency, async (repo) => {
   const languages = repo.languages_url ? await githubFetch(repo.languages_url, token) : {};
   const primaryLanguage = repo.language ?? Object.entries(languages).sort(([, a], [, b]) => b - a)[0]?.[0] ?? null;
 
@@ -175,7 +230,7 @@ const repositories = await Promise.all(sortedByActivity.map(async (repo) => {
     lastActivityAt: repo.pushed_at ?? repo.updated_at ?? null,
     visibility: repo.private ? 'private' : 'public',
   };
-}));
+});
 
 const payload = {
   username,

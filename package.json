@@ -10,11 +10,14 @@
     "preview": "vite preview",
     "analyze:projects": "node scripts/analyze-local-projects.mjs",
     "fetch:github-profile": "node scripts/fetch-github-profile.mjs",
+    "fetch:github-data": "npm run fetch:github-profile && npm run fetch:github-contributions",
+    "fetch:github-contributions": "node scripts/fetch-github-contributions.mjs",
     "predeploy": "npm run build",
     "deploy": "gh-pages -d dist"
   },
   "dependencies": {
     "@types/react-scroll": "^1.8.10",
+    "framer-motion": "^12.42.0",
     "lucide-react": "^0.562.0",
     "react": "^19.2.3",
     "react-dom": "^19.2.3",

@@ -1,10 +1,11 @@
-import React, { useEffect, useMemo, useRef } from 'react';
+import React, { useMemo } from 'react';
 import { useGitHubData } from '../../hooks/useGitHubData';
 import { type GitHubContributionWeek, useGitHubContributions } from '../../hooks/useGitHubContributions';
 import { GITHUB_USERNAME } from '../../constants';
 import { Language } from '../../types';
 import { Github, ExternalLink, GitCommit, BarChart3, PieChart, BookOpen, GitFork, Star, Users } from 'lucide-react';
 import { CapsuleDivider } from '../Shared/StyledForms';
+import { useRevealOnScroll } from '../../hooks/useRevealOnScroll';
 
 interface ActiviteGithubProps {
   language: Language;
@@ -34,39 +35,6 @@ const formatDate = (value: string | null, language: Language) => {
 const formatNumber = (value: number) => new Intl.NumberFormat('en', {
   notation: value >= 1000 ? 'compact' : 'standard',
 }).format(value);
-
-const useScrollReveal = () => {
-  const containerRef = useRef<HTMLElement | null>(null);
-
-  useEffect(() => {
-    const container = containerRef.current;
-    if (!container || !('IntersectionObserver' in window)) return;
-
-    const elements = Array.from(container.querySelectorAll<HTMLElement>('.github-reveal'));
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (!entry.isIntersecting) return;
-          entry.target.classList.add('is-visible');
-          observer.unobserve(entry.target);
-        });
-      },
-      {
-        threshold: 0.12,
-        rootMargin: '0px 0px -8% 0px',
-      }
-    );
-
-    elements.forEach((element, index) => {
-      element.style.setProperty('--reveal-delay', `${Math.min(index * 70, 420)}ms`);
-      observer.observe(element);
-    });
-
-    return () => observer.disconnect();
-  }, []);
-
-  return containerRef;
-};
 
 const MetricItem: React.FC<{ icon: React.ReactNode; label: string; value: string | number }> = ({ icon, label, value }) => (
   <div className="rounded-2xl bg-slate-50 dark:bg-white/5 border border-slate-100 dark:border-white/10 p-4 min-w-0">
@@ -137,14 +105,14 @@ const ActiviteGithub: React.FC<ActiviteGithubProps> = ({ language }) => {
   );
   const dayLabels = DAY_LABELS[language];
   const visibleTotal = formatNumber(contributionTotal);
-  const revealRef = useScrollReveal();
+  const revealRef = useRevealOnScroll<HTMLElement>();
 
   return (
     <section ref={revealRef} id="activite" className="py-24 px-4 sm:px-6 bg-[#BDC3C7]/5 dark:bg-white/[0.01]">
       <div className="max-w-5xl mx-auto">
 
         {/* --- En-tête de la section --- */}
-        <div className="github-reveal flex flex-col md:flex-row justify-between items-center mb-12 sm:mb-8 gap-6 sm:gap-8">
+        <div className="portfolio-reveal flex flex-col md:flex-row justify-between items-center mb-12 sm:mb-8 gap-6 sm:gap-8">
           <CapsuleDivider>
             {language === 'fr' ? 'Activité GitHub' : 'GitHub Activity'}
           </CapsuleDivider>
@@ -166,7 +134,7 @@ const ActiviteGithub: React.FC<ActiviteGithubProps> = ({ language }) => {
         <div className="flex flex-col gap-8">
 
             {/* --- 1. Carte Calendrier (Contributions) --- */}
-            <div className="github-reveal bg-white dark:bg-[#151621] p-5 sm:p-8 lg:p-10 rounded-[2rem] sm:rounded-[2.5rem] shadow-xl border border-slate-100 dark:border-white/5 flex flex-col h-full">
+            <div className="portfolio-reveal bg-white dark:bg-[#151621] p-5 sm:p-8 lg:p-10 rounded-[2rem] sm:rounded-[2.5rem] shadow-xl border border-slate-100 dark:border-white/5 flex flex-col h-full">
               <div className="flex items-center gap-4 sm:gap-6 mb-8">
                 <div className="flex items-center gap-4 sm:gap-6">
                 <div className="p-3 bg-[#151621] dark:bg-white text-white dark:text-[#151621] rounded-xl shadow-md">
@@ -183,7 +151,7 @@ const ActiviteGithub: React.FC<ActiviteGithubProps> = ({ language }) => {
                 </div>
               </div>
 
-              <div className="mb-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="mb-5">
                 <p className="text-sm font-bold text-slate-500 dark:text-gray-400">
                   {contributionsLoading
                     ? (language === 'fr' ? 'Chargement du calendrier...' : 'Loading calendar...')
@@ -193,15 +161,6 @@ const ActiviteGithub: React.FC<ActiviteGithubProps> = ({ language }) => {
                         ? `${visibleTotal} contributions sur la dernière année`
                         : `${visibleTotal} contributions in the last year`}
                 </p>
-                <a
-                  href={`https://github.com/users/${GITHUB_USERNAME}/contributions`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 text-xs font-black uppercase tracking-widest text-[#b8b2b0] hover:text-[#151621] dark:hover:text-white transition-colors"
-                >
-                  {language === 'fr' ? 'Calendrier officiel' : 'Official calendar'}
-                  <ExternalLink size={14} />
-                </a>
               </div>
 
               <div className="rounded-2xl border border-slate-100 dark:border-white/10 bg-slate-50/70 dark:bg-black/10 p-3 sm:p-5 overflow-hidden">
@@ -278,7 +237,7 @@ const ActiviteGithub: React.FC<ActiviteGithubProps> = ({ language }) => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8">
 
               {/* Carte Stats Globales */}
-              <div className="github-reveal bg-white dark:bg-[#151621] p-6 sm:p-10 rounded-[2rem] sm:rounded-[2.5rem] shadow-xl border border-slate-100 dark:border-white/5 flex flex-col h-full">
+              <div className="portfolio-reveal bg-white dark:bg-[#151621] p-6 sm:p-10 rounded-[2rem] sm:rounded-[2.5rem] shadow-xl border border-slate-100 dark:border-white/5 flex flex-col h-full">
                 <div className="flex items-center gap-4 ">
                   <div className="p-3 bg-[#151621] dark:bg-white text-white dark:text-[#151621] rounded-xl shadow-md">
                     <BarChart3 size={20} />
@@ -327,7 +286,7 @@ const ActiviteGithub: React.FC<ActiviteGithubProps> = ({ language }) => {
               </div>
 
               {/* Carte Langages */}
-              <div className="github-reveal bg-white dark:bg-[#151621] p-6 sm:p-10 rounded-[2rem] sm:rounded-[2.5rem] shadow-xl border border-slate-100 dark:border-white/5 flex flex-col h-full">
+              <div className="portfolio-reveal bg-white dark:bg-[#151621] p-6 sm:p-10 rounded-[2rem] sm:rounded-[2.5rem] shadow-xl border border-slate-100 dark:border-white/5 flex flex-col h-full">
                 <div className="flex items-center gap-4">
                   <div className="p-3 bg-[#151621] dark:bg-white text-white dark:text-[#151621] rounded-xl shadow-md">
                     <PieChart size={20} />

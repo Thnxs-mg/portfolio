@@ -3,6 +3,7 @@ import { Phone, Mail, MapPin, Github, Linkedin, ArrowRight, Download } from 'luc
 import { PERSONAL_INFO, TRANSLATIONS } from '../../constants';
 import { Language } from '../../types';
 import { CapsuleDivider } from '../Shared/StyledForms';
+import { useRevealOnScroll } from '../../hooks/useRevealOnScroll';
 
 interface ContactSectionProps {
   language: Language;
@@ -41,17 +42,18 @@ const ContactItem: React.FC<{ icon: React.ReactNode; label: string; value: strin
 
 const ContactSection: React.FC<ContactSectionProps> = ({ language }) => {
   const t = TRANSLATIONS[language];
+  const revealRef = useRevealOnScroll<HTMLElement>();
 
   return (
-    <section id="contact" className="sm:py-24 px-4 sm:px-6 bg-[#BDC3C7]/5 dark:bg-white/[0.01]">
+    <section ref={revealRef} id="contact" className="sm:py-24 px-4 sm:px-6 bg-[#BDC3C7]/5 dark:bg-white/[0.01]">
       <div className="max-w-5xl mx-auto">
 
-        <CapsuleDivider className="mb-8 w-fit mx-auto md:mx-0">
+        <CapsuleDivider className="portfolio-reveal mb-8 w-fit mx-auto md:mx-0">
           {t.sections.contact}
         </CapsuleDivider>
 
         {/* --- LE GRAND CONTENEUR UNIFIÉ --- */}
-        <div className="bg-white dark:bg-[#151621] rounded-[3rem] shadow-2xl shadow-slate-200/50 dark:shadow-none overflow-hidden flex flex-col lg:flex-row relative group">
+        <div className="portfolio-reveal bg-white dark:bg-[#151621] rounded-[3rem] shadow-2xl shadow-slate-200/50 dark:shadow-none overflow-hidden flex flex-col lg:flex-row relative group">
 
           {/* --- PARTIE GAUCHE : INFOS --- */}
           <div className="lg:w-7/12 p-8 sm:p-12 lg:p-16 flex flex-col justify-center relative z-10">

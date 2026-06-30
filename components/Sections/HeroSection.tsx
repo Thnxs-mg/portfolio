@@ -1,9 +1,11 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom'; // Pour la navigation entre pages
-import { scroller } from 'react-scroll'; // Pour le scroll fluide vers les sections
+import { useNavigate } from 'react-router-dom';
+import { scroller } from 'react-scroll';
 import { PERSONAL_INFO, TRANSLATIONS } from '../../constants';
 import { Language } from '../../types';
 import profilePicture from '../../assets/pro_picture.png';
+import { cancelActiveScroll, runWithNativeSmoothDisabled } from '../../utils/scrollMotion';
+import { useRevealOnScroll } from '../../hooks/useRevealOnScroll';
 
 interface HeroSectionProps {
   language: Language;
@@ -12,38 +14,26 @@ interface HeroSectionProps {
 const HeroSection: React.FC<HeroSectionProps> = ({ language }) => {
   const t = TRANSLATIONS[language];
   const navigate = useNavigate();
+  const revealRef = useRevealOnScroll<HTMLElement>();
 
-  const jumpToTop = () => {
-    document.dispatchEvent(new WheelEvent('wheel', { deltaY: 0, cancelable: true }));
-    const root = document.documentElement;
-    const previousScrollBehavior = root.style.scrollBehavior;
-    root.style.scrollBehavior = 'auto';
-    window.scrollTo(0, 0);
-    root.style.scrollBehavior = previousScrollBehavior;
-  };
-
-  // Fonction pour scroller proprement vers la section Contact
   const handleScrollToContact = (e: React.MouseEvent) => {
-    e.preventDefault(); // Empêche le saut brutal par défaut
-    scroller.scrollTo('contact', {
-      smooth: true,
-      duration: 420,
-      offset: -80, // Ajustement pour ne pas être caché par la navbar
-    });
+    e.preventDefault();
+    cancelActiveScroll();
+    runWithNativeSmoothDisabled(() => {
+      scroller.scrollTo('contact', { smooth: 'easeInOutCubic', duration: 760, offset: -80 });
+    }, 880);
   };
 
-  // Fonction pour aller vers la page Projets
   const handleGoToProjects = (e: React.MouseEvent) => {
     e.preventDefault();
-    jumpToTop();
     navigate('/realisations');
   };
 
   return (
-    <section id="home" className="relative pt-24 sm:pt-36 pb-12 sm:pb-20 px-4 sm:px-6 lg:px-12 overflow-hidden">
+    <section ref={revealRef} id="home" className="relative pt-24 sm:pt-36 pb-12 sm:pb-20 px-4 sm:px-6 lg:px-12 overflow-hidden">
       <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center gap-8 sm:gap-12">
         {/* Photo Container */}
-        <div className="relative group">
+        <div className="portfolio-reveal relative group">
           <div className="absolute -inset-2 sm:-inset-4 bg-[#b8b2b0] rounded-full opacity-20 -z-10 animate-pulse"></div>
           <div className="w-48 h-48 sm:w-60 h-60 md:w-72 md:h-72 rounded-full border-4 sm:border-8 border-[#151621] dark:border-[#b8b2b0] overflow-hidden shadow-2xl relative z-10 transition-transform duration-500 group-hover:scale-105">
             <img
@@ -58,7 +48,7 @@ const HeroSection: React.FC<HeroSectionProps> = ({ language }) => {
         </div>
 
         {/* Text Content */}
-        <div className="text-center md:text-left relative z-10 max-w-2xl mt-4 md:mt-10 lg:mt-14">
+        <div className="portfolio-reveal text-center md:text-left relative z-10 max-w-2xl mt-4 md:mt-10 lg:mt-14">
           <h1 className="text-3xl sm:text-5xl lg:text-7xl font-black text-[#151621] dark:text-white leading-[1.1] mb-4 tracking-tighter">
             {PERSONAL_INFO.fullName}
           </h1>

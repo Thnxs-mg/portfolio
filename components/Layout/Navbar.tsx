@@ -1,9 +1,20 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useLayoutEffect, useRef, useCallback } from 'react';
 import { Menu, X, Sun, Moon, Languages } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { scroller } from 'react-scroll';
+import { motion, AnimatePresence } from 'framer-motion';
 import { TRANSLATIONS } from '../../constants';
 import { Language } from '../../types';
+import { cancelActiveScroll, runWithNativeSmoothDisabled, setPendingScrollTarget } from '../../utils/scrollMotion';
+
+type NavigationState = {
+  scrollTo?: string;
+};
+
+type SectionScrollStartEvent = CustomEvent<{
+  targetSection: string;
+  duration?: number;
+}>;
 
 interface NavbarProps {
   language: 'fr' | 'en';
@@ -12,103 +23,222 @@ interface NavbarProps {
   toggleTheme: () => void;
 }
 
+const SECTION_IDS = ['home', 'about', 'skills', 'activite', 'contact'];
+const SCROLL_DURATION = 760;
+
+const getNavKey = (href: string) => href.startsWith('#') ? href.substring(1) : href;
+
 const Navbar: React.FC<NavbarProps> = ({ language, setLanguage, isDark, toggleTheme }) => {
   const [isOpen, setIsOpen] = useState(false);
-  const [activeSection, setActiveSection] = useState<string>('home');
   const t = TRANSLATIONS[language];
-  
+
   const location = useLocation();
   const navigate = useNavigate();
 
+  // activeKey est la source de vérité unique pour l'onglet actif.
+  // Sur la homepage, il suit le scroll réel pour garder la capsule synchronisée.
+  const [activeKey, setActiveKey] = useState<string>(() =>
+    location.pathname !== '/' ? location.pathname : 'home'
+  );
+  const [pillStyle, setPillStyle] = useState({ x: 0, width: 0, visible: false });
+  const [shouldAnimatePill, setShouldAnimatePill] = useState(true);
+  const activeKeyRef = useRef<string>(activeKey);
+  const scrollLockUntilRef = useRef(0);
+  const pillAnimationLockUntilRef = useRef(0);
+  const pendingCrossRouteResetRef = useRef(false);
+  const navListRef = useRef<HTMLDivElement | null>(null);
+  const navItemRefs = useRef<Record<string, HTMLAnchorElement | null>>({});
+
   const navLinks = [
-    { name: t.nav.home, href: '#home' },
-    { name: t.nav.about, href: '#about' },
-    { name: t.nav.skills, href: '#skills' },
-    { name: t.nav.activite, href: '#activite' }, // ID de la section GitHub
-    { name: t.nav.contact, href: '#contact' },
+    { name: t.nav.home,     href: '#home' },
+    { name: t.nav.about,    href: '#about' },
+    { name: t.nav.skills,   href: '#skills' },
+    { name: t.nav.activite, href: '#activite' },
+    { name: t.nav.contact,  href: '#contact' },
     { name: t.nav.projects, href: '/realisations' },
   ];
 
-  const jumpToTop = () => {
-    document.dispatchEvent(new WheelEvent('wheel', { deltaY: 0, cancelable: true }));
-    const root = document.documentElement;
-    const previousScrollBehavior = root.style.scrollBehavior;
-    root.style.scrollBehavior = 'auto';
-    window.scrollTo(0, 0);
-    root.style.scrollBehavior = previousScrollBehavior;
+  const getPillStyleForKey = (key: string) => {
+    const list = navListRef.current;
+    const item = navItemRefs.current[key];
+
+    if (!list || !item) {
+      return null;
+    }
+
+    const listRect = list.getBoundingClientRect();
+    const itemRect = item.getBoundingClientRect();
+    return {
+      x: itemRect.left - listRect.left,
+      width: itemRect.width,
+      visible: true,
+    };
   };
 
-  // --- LOGIQUE DE DÉTECTION DU SCROLL ---
-  useEffect(() => {
-    // Si on est sur la page Projets, on force l'état actif sur le lien Projets
-    if (location.pathname === '/realisations' || location.pathname === '/projects') {
-      setActiveSection('/realisations');
+  const syncPillToActiveKey = () => {
+    const nextStyle = getPillStyleForKey(activeKeyRef.current);
+
+    if (!nextStyle) {
+      setPillStyle((current) => ({ ...current, visible: false }));
       return;
     }
 
-    const handleScroll = () => {
-      const scrollPosition = window.scrollY + 100; // Offset pour déclencher un peu avant
+    setPillStyle(nextStyle);
+  };
 
-      navLinks.forEach((link) => {
-        if (link.href.startsWith('#')) {
-          const sectionId = link.href.substring(1);
-          const element = document.getElementById(sectionId);
-          
-          if (element) {
-            const { offsetTop, offsetHeight } = element;
-            // Vérifie si le scroll est dans la zone de la section
-            if (scrollPosition >= offsetTop && scrollPosition < offsetTop + offsetHeight) {
-              setActiveSection(sectionId);
-            }
-          }
-        }
-      });
+  const placePillOnKey = (key: string, visible = true) => {
+    const nextStyle = getPillStyleForKey(key);
+    if (!nextStyle) return;
+
+    setPillStyle({
+      ...nextStyle,
+      visible,
+    });
+  };
+
+  useLayoutEffect(() => {
+    if (window.performance.now() < pillAnimationLockUntilRef.current) return;
+
+    if (pendingCrossRouteResetRef.current) {
+      placePillOnKey('home', false);
+      return;
+    }
+
+    syncPillToActiveKey();
+  }, [activeKey, language]);
+
+  useEffect(() => {
+    window.addEventListener('resize', syncPillToActiveKey);
+    return () => window.removeEventListener('resize', syncPillToActiveKey);
+  }, []);
+
+  useEffect(() => {
+    const handleSectionScrollStart = (event: Event) => {
+      const { targetSection, duration = SCROLL_DURATION } = (event as SectionScrollStartEvent).detail;
+
+      if (pendingCrossRouteResetRef.current) {
+        pendingCrossRouteResetRef.current = false;
+        // React 18 batchifie automatiquement — pas besoin de flushSync
+        setShouldAnimatePill(false);
+        activeKeyRef.current = targetSection;
+        setActiveKey(targetSection);
+        placePillOnKey(targetSection, true);
+
+        requestAnimationFrame(() => {
+          pillAnimationLockUntilRef.current = window.performance.now() + 80;
+          setShouldAnimatePill(true);
+        });
+        return;
+      }
+
+      setShouldAnimatePill(true);
+      activeKeyRef.current = targetSection;
+      setActiveKey(targetSection);
+      scrollLockUntilRef.current = window.performance.now() + duration + 120;
     };
 
-    window.addEventListener('scroll', handleScroll);
-    handleScroll(); // Check initial
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, [location.pathname]); // Dépendance simplifiée
+    window.addEventListener('portfolio:section-scroll-start', handleSectionScrollStart);
+    return () => {
+      window.removeEventListener('portfolio:section-scroll-start', handleSectionScrollStart);
+    };
+  }, []);
 
+  // --- Route active : garde les pages dédiées synchronisées, y compris retour navigateur ---
+  useEffect(() => {
+    if (location.pathname === '/') return;
+    if (activeKeyRef.current === location.pathname) return;
+
+    activeKeyRef.current = location.pathname;
+    setActiveKey(location.pathname);
+  }, [location.pathname]);
+
+  // --- Scroll spy : uniquement sur la homepage, piloté par la position réelle de la page ---
+  useLayoutEffect(() => {
+    if (location.pathname !== '/') return;
+
+    const targetSection = (location.state as NavigationState | null)?.scrollTo;
+
+    const detectSection = () => {
+      if (window.performance.now() < scrollLockUntilRef.current) return;
+
+      const scrollY = window.scrollY + 130;
+      let current = 'home';
+      for (const id of SECTION_IDS) {
+        const el = document.getElementById(id);
+        if (el && scrollY >= el.offsetTop) {
+          current = id;
+        }
+      }
+      if (activeKeyRef.current !== current) {
+        activeKeyRef.current = current;
+        setActiveKey(current);
+      }
+    };
+
+    window.addEventListener('scroll', detectSection, { passive: true });
+    const timer = window.setTimeout(() => {
+      if (!targetSection) {
+        detectSection();
+      }
+    }, 50);
+
+    return () => {
+      window.removeEventListener('scroll', detectSection);
+      clearTimeout(timer);
+    };
+  }, [location.pathname, location.state]);
+
+  // --- isLinkActive : basé uniquement sur activeKey, jamais sur location ---
+  const isLinkActive = (href: string): boolean => {
+    return activeKey === getNavKey(href);
+  };
+
+  // --- Click handler ---
   const handleNavClick = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
     e.preventDefault();
     setIsOpen(false);
 
     if (href.startsWith('#')) {
       const targetId = href.substring(1);
-      
-      // On met à jour l'état tout de suite pour le feedback visuel
-      setActiveSection(targetId);
+      cancelActiveScroll();
 
       if (location.pathname === '/') {
-        scroller.scrollTo(targetId, {
-          smooth: true,
-          duration: 420,
-          offset: -80,
-        });
+        // Sur la homepage, le scroll-spy fera suivre la capsule pendant le mouvement.
+        runWithNativeSmoothDisabled(() => {
+          scroller.scrollTo(targetId, {
+            smooth: 'easeInOutCubic',
+            duration: SCROLL_DURATION,
+            offset: -80,
+          });
+        }, SCROLL_DURATION + 120);
       } else {
-        navigate('/', { state: { scrollTo: targetId } });
+        // Navigation depuis une autre page vers la homepage
+        setShouldAnimatePill(false);
+        activeKeyRef.current = targetId;
+        setActiveKey(targetId);
+        placePillOnKey(targetId, true);
+        scrollLockUntilRef.current = window.performance.now() + 1000;
+
+        setPendingScrollTarget(targetId);
+        navigate('/');
       }
     } else {
-      setActiveSection(href);
+      cancelActiveScroll();
+      setShouldAnimatePill(true);
+      activeKeyRef.current = href;
+      setActiveKey(href);
       navigate(href);
     }
-  };
-
-  // Helper simple
-  const isLinkActive = (href: string) => {
-    if (href.startsWith('#')) return activeSection === href.substring(1);
-    return activeSection === href;
   };
 
   return (
     <nav className="fixed top-0 left-0 w-full z-[100] bg-white/90 dark:bg-[#12141d]/90 backdrop-blur-md border-b border-[#BDC3C7]/30 dark:border-white/10 shadow-sm transition-colors">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16 sm:h-20 items-center">
-          
+
           {/* LOGO */}
           <div className="flex-shrink-0 flex items-center">
-            <a 
+            <a
               href="#home"
               onClick={(e) => handleNavClick(e, '#home')}
               className="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity"
@@ -125,28 +255,50 @@ const Navbar: React.FC<NavbarProps> = ({ language, setLanguage, isDark, toggleTh
 
           {/* Desktop Nav */}
           <div className="hidden lg:flex items-center space-x-6 xl:space-x-8">
-            <div className="flex space-x-5 xl:space-x-8 mr-4 xl:mr-6 border-r border-[#BDC3C7] pr-6 dark:border-white/10">
+            <div ref={navListRef} className="relative flex items-center space-x-1 xl:space-x-2 mr-4 xl:mr-6 border-r border-[#BDC3C7] pr-6 dark:border-white/10">
+              <span
+                className={`pointer-events-none absolute top-1/2 left-0 h-[calc(100%-4px)] -translate-y-1/2 rounded-full bg-[#151621]/8 dark:bg-white/10 ${
+                  shouldAnimatePill
+                    ? 'transition-[transform,width,opacity] duration-[520ms] ease-[cubic-bezier(0.22,1,0.36,1)]'
+                    : 'transition-none duration-0'
+                } ${
+                  pillStyle.visible ? 'opacity-100' : 'opacity-0'
+                }`}
+                style={{
+                  width: pillStyle.width,
+                  transform: `translate3d(${pillStyle.x}px, -50%, 0)`,
+                }}
+              />
               {navLinks.map((link) => {
                 const isActive = isLinkActive(link.href);
+                const key = getNavKey(link.href);
+
                 return (
                   <a
                     key={link.name}
+                    ref={(element) => {
+                      navItemRefs.current[key] = element;
+                    }}
                     href={link.href}
                     onClick={(e) => handleNavClick(e, link.href)}
-                    className={`font-semibold transition-colors duration-200 text-sm xl:text-base cursor-pointer ${
-                      isActive 
-                        ? 'text-[#b8b2b0] dark:text-white dark:drop-shadow-[0_0_8px_rgba(184,178,176,0.65)]'
-                        : 'text-[#151621] dark:text-gray-300 hover:text-[#b8b2b0] dark:hover:text-[#b8b2b0]' // Inactif
-                    }`}
+                    className="relative px-3 py-1.5 font-semibold text-sm xl:text-base cursor-pointer rounded-full"
                   >
-                    {link.name}
+                    <span
+                      className={`relative z-10 transition-colors duration-150 ${
+                        isActive
+                          ? 'text-[#b8b2b0] dark:text-white'
+                          : 'text-[#151621] dark:text-gray-300 hover:text-[#b8b2b0] dark:hover:text-[#b8b2b0]'
+                      }`}
+                    >
+                      {link.name}
+                    </span>
                   </a>
                 );
               })}
             </div>
-            
+
             <div className="flex items-center space-x-3 xl:space-x-4">
-              <button 
+              <button
                 onClick={toggleTheme}
                 className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-white/10 transition-colors text-[#151621] dark:text-white"
                 title="Toggle Theme"
@@ -154,7 +306,7 @@ const Navbar: React.FC<NavbarProps> = ({ language, setLanguage, isDark, toggleTh
                 {isDark ? <Sun size={20} /> : <Moon size={20} />}
               </button>
 
-              <button 
+              <button
                 onClick={() => setLanguage(language === 'fr' ? 'en' : 'fr')}
                 className="flex items-center gap-2 px-3 py-1 rounded-full border border-[#151621] dark:border-white/30 text-xs xl:text-sm font-bold hover:bg-[#151621] hover:text-white dark:hover:bg-white dark:hover:text-[#151621] transition-all"
               >
@@ -166,10 +318,10 @@ const Navbar: React.FC<NavbarProps> = ({ language, setLanguage, isDark, toggleTh
 
           {/* Mobile menu controls */}
           <div className="lg:hidden flex items-center space-x-2">
-             <button onClick={toggleTheme} className="p-2 text-[#151621] dark:text-white rounded-full hover:bg-gray-100 dark:hover:bg-white/5">
-                {isDark ? <Sun size={20} /> : <Moon size={20} />}
-             </button>
-             <button
+            <button onClick={toggleTheme} className="p-2 text-[#151621] dark:text-white rounded-full hover:bg-gray-100 dark:hover:bg-white/5">
+              {isDark ? <Sun size={20} /> : <Moon size={20} />}
+            </button>
+            <button
               onClick={() => setIsOpen(!isOpen)}
               className="text-[#151621] dark:text-white hover:text-[#b8b2b0] p-2"
             >
@@ -180,36 +332,46 @@ const Navbar: React.FC<NavbarProps> = ({ language, setLanguage, isDark, toggleTh
       </div>
 
       {/* Mobile Nav Overlay */}
-      <div className={`lg:hidden absolute top-full left-0 w-full bg-white dark:bg-[#1a1d23] border-t border-[#BDC3C7] dark:border-white/10 transition-all duration-300 shadow-2xl ${isOpen ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4 pointer-events-none'}`}>
-          <div className="px-4 py-6 space-y-2">
-            {navLinks.map((link) => {
-              const isActive = isLinkActive(link.href);
-              return (
-                <a
-                  key={link.name}
-                  href={link.href}
-                  onClick={(e) => handleNavClick(e, link.href)}
-                  className={`block px-4 py-4 rounded-xl font-bold transition-all text-lg cursor-pointer ${
-                    isActive 
-                      ? 'text-[#151621] dark:text-white bg-[#b8b2b0]/15 dark:bg-[#b8b2b0]/20 border border-[#b8b2b0]/30'
-                      : 'text-[#151621] dark:text-gray-300 hover:bg-[#b8b2b0] hover:text-white'
-                  }`}
-                >
-                  {link.name}
-                </a>
-              );
-            })}
-            <div className="pt-4 flex justify-between items-center px-4">
-               <button 
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.18, ease: 'easeOut' }}
+            className="lg:hidden absolute top-full left-0 w-full bg-white dark:bg-[#1a1d23] border-t border-[#BDC3C7] dark:border-white/10 shadow-2xl"
+          >
+            <div className="px-4 py-6 space-y-2">
+              {navLinks.map((link) => {
+                const isActive = isLinkActive(link.href);
+                return (
+                  <a
+                    key={link.name}
+                    href={link.href}
+                    onClick={(e) => handleNavClick(e, link.href)}
+                    className={`block px-4 py-4 rounded-xl font-bold transition-all text-lg cursor-pointer ${
+                      isActive
+                        ? 'text-[#151621] dark:text-white bg-[#b8b2b0]/15 dark:bg-[#b8b2b0]/20 border border-[#b8b2b0]/30'
+                        : 'text-[#151621] dark:text-gray-300 hover:bg-[#b8b2b0] hover:text-white'
+                    }`}
+                  >
+                    {link.name}
+                  </a>
+                );
+              })}
+              <div className="pt-4 flex justify-between items-center px-4">
+                <button
                   onClick={() => { setLanguage(language === 'fr' ? 'en' : 'fr'); setIsOpen(false); }}
                   className="flex items-center gap-2 px-6 py-2 rounded-full border border-[#151621] dark:border-white/30 text-sm font-bold dark:text-white"
                 >
                   <Languages size={18} />
                   {language === 'fr' ? 'Switch to English' : 'Passer en Français'}
                 </button>
+              </div>
             </div>
-          </div>
-      </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </nav>
   );
 };

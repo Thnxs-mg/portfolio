@@ -1,6 +1,5 @@
-
-import { useState, useEffect } from 'react';
-import { GitHubRepo, GitHubUser } from '../types';
+import { useEffect, useState } from 'react';
+import type { GitHubRepo, GitHubUser } from '../types';
 
 interface GitHubLanguageStat {
   name: string;
@@ -29,34 +28,28 @@ export interface GitHubRepositoryStat {
   visibility: 'public' | 'private';
 }
 
-interface StaticGitHubProfile {
+export interface GitHubContributionDay {
+  date: string | null;
+  count: number;
+  level: number;
+  isOutsideRange?: boolean;
+}
+
+export interface GitHubContributionWeek {
+  days: GitHubContributionDay[];
+}
+
+interface StaticGitHubData {
   username?: string;
   generatedAt?: string;
   user?: GitHubUser | null;
-  repoCount: number;
-  totalStars: number;
-  totalForks: number;
-  lastUpdatedAt: string | null;
-  languages: GitHubLanguageStat[];
+  repoCount?: number;
+  totalStars?: number;
+  totalForks?: number;
+  lastUpdatedAt?: string | null;
+  languages?: GitHubLanguageStat[];
   repositories?: GitHubRepositoryStat[];
 }
-
-type RepoLanguageData = Record<string, number>;
-
-const LANGUAGE_COLORS: Record<string, string> = {
-  TypeScript: '#3178c6',
-  JavaScript: '#f1e05a',
-  Python: '#3572A5',
-  Java: '#b07219',
-  CSS: '#663399',
-  HTML: '#e34c26',
-  PHP: '#4F5D95',
-  'C#': '#178600',
-  Kotlin: '#A97BFF',
-  Dart: '#00B4AB',
-  Shell: '#89e051',
-  SCSS: '#c6538c',
-};
 
 const EMPTY_SUMMARY: GitHubSummary = {
   repoCount: 0,
@@ -66,58 +59,13 @@ const EMPTY_SUMMARY: GitHubSummary = {
   languages: [],
 };
 
-function buildLanguageStats(repoLanguages: RepoLanguageData[]): GitHubLanguageStat[] {
-  const totals = new Map<string, number>();
-
-  repoLanguages.forEach((languages) => {
-    Object.entries(languages).forEach(([name, bytes]) => {
-      totals.set(name, (totals.get(name) ?? 0) + bytes);
-    });
-  });
-
-  const totalBytes = Array.from(totals.values()).reduce((sum, bytes) => sum + bytes, 0);
-
-  if (!totalBytes) {
-    return [];
-  }
-
-  return Array.from(totals.entries())
-    .sort(([, a], [, b]) => b - a)
-    .slice(0, 6)
-    .map(([name, bytes]) => ({
-      name,
-      bytes,
-      percentage: Math.round((bytes / totalBytes) * 1000) / 10,
-      color: LANGUAGE_COLORS[name] ?? '#b8b2b0',
-    }));
+function isCurrentUser(data: StaticGitHubData, username: string) {
+  return !data.username || data.username.toLowerCase() === username.toLowerCase();
 }
 
-function buildSummary(repos: GitHubRepo[], repoLanguages: RepoLanguageData[]): GitHubSummary {
-  const ownedRepos = repos
-    .filter((repo) => !repo.fork)
-    .sort((a, b) => {
-      const dateA = new Date(a.pushed_at ?? a.updated_at).getTime();
-      const dateB = new Date(b.pushed_at ?? b.updated_at).getTime();
-      return dateB - dateA;
-    });
-
+function toSummary(data: StaticGitHubData): GitHubSummary {
   return {
-    repoCount: ownedRepos.length,
-    totalStars: ownedRepos.reduce((sum, repo) => sum + repo.stargazers_count, 0),
-    totalForks: ownedRepos.reduce((sum, repo) => sum + repo.forks_count, 0),
-    lastUpdatedAt: ownedRepos[0]?.pushed_at ?? ownedRepos[0]?.updated_at ?? null,
-    languages: buildLanguageStats(repoLanguages),
-  };
-}
-
-function hasUsableStaticProfile(data: StaticGitHubProfile, username: string) {
-  const sameUser = !data.username || data.username.toLowerCase() === username.toLowerCase();
-  return sameUser && Array.isArray(data.languages);
-}
-
-function buildSummaryFromStaticProfile(data: StaticGitHubProfile): GitHubSummary {
-  return {
-    repoCount: data.repoCount ?? 0,
+    repoCount: data.repoCount ?? data.repositories?.length ?? 0,
     totalStars: data.totalStars ?? 0,
     totalForks: data.totalForks ?? 0,
     lastUpdatedAt: data.lastUpdatedAt ?? null,
@@ -125,102 +73,76 @@ function buildSummaryFromStaticProfile(data: StaticGitHubProfile): GitHubSummary
   };
 }
 
+async function fetchJson<T>(url: string, signal: AbortSignal, init?: RequestInit): Promise<T> {
+  const response = await fetch(url, { ...init, signal });
+
+  if (!response.ok) {
+    throw new Error(`${url} failed: ${response.status}`);
+  }
+
+  return response.json() as Promise<T>;
+}
+
 export function useGitHubData(username: string) {
-  const [repos, setRepos] = useState<GitHubRepo[]>([]);
+  const [repos] = useState<GitHubRepo[]>([]);
   const [repositoryStats, setRepositoryStats] = useState<GitHubRepositoryStat[]>([]);
   const [user, setUser] = useState<GitHubUser | null>(null);
   const [summary, setSummary] = useState<GitHubSummary>(EMPTY_SUMMARY);
+  const [contributionWeeks] = useState<GitHubContributionWeek[]>([]);
+  const [contributionTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [contributionsError] = useState<string | null>(null);
 
   useEffect(() => {
     let isMounted = true;
     const controller = new AbortController();
+    const cacheKey = `github-data-${username}`;
+
+    const applyStaticData = (data: StaticGitHubData) => {
+      setUser(data.user ?? null);
+      setRepositoryStats(data.repositories ?? []);
+      setSummary(toSummary(data));
+    };
 
     const fetchData = async () => {
       try {
         setLoading(true);
         setError(null);
 
-        const staticResponse = await fetch(`${import.meta.env.BASE_URL}github-profile.json`, {
-          cache: 'no-store',
-          signal: controller.signal,
-        });
-
-        if (staticResponse.ok) {
-          const staticData = await staticResponse.json() as StaticGitHubProfile;
-
-          if (!isMounted) {
-            return;
-          }
-
-          if (hasUsableStaticProfile(staticData, username)) {
-            setUser(staticData.user ?? null);
-            setRepos([]);
-            setRepositoryStats(staticData.repositories ?? []);
-            setSummary(buildSummaryFromStaticProfile(staticData));
-            return;
+        const cached = localStorage.getItem(cacheKey);
+        if (cached) {
+          try {
+            const cachedData = JSON.parse(cached) as StaticGitHubData;
+            if (isCurrentUser(cachedData, username) && isMounted) {
+              applyStaticData(cachedData);
+              setLoading(false);
+            }
+          } catch {
+            localStorage.removeItem(cacheKey);
           }
         }
 
-        const [userRes, reposRes] = await Promise.all([
-          fetch(`https://api.github.com/users/${username}`, { signal: controller.signal }),
-          fetch(`https://api.github.com/users/${username}/repos?sort=pushed&per_page=100&type=owner`, { signal: controller.signal })
-        ]);
-
-        if (!userRes.ok || !reposRes.ok) {
-          throw new Error('Impossible de récupérer les données GitHub');
-        }
-
-        const userData = await userRes.json() as GitHubUser;
-        const reposData = await reposRes.json() as GitHubRepo[];
-        const repoLanguageData = await Promise.all(
-          reposData
-            .filter((repo) => !repo.fork && repo.languages_url)
-            .map(async (repo) => {
-              try {
-                const response = await fetch(repo.languages_url, { signal: controller.signal });
-                return response.ok ? await response.json() as RepoLanguageData : {};
-              } catch {
-                return {};
-              }
-            })
+        const staticData = await fetchJson<StaticGitHubData>(
+          `${import.meta.env.BASE_URL}github-profile.json`,
+          controller.signal
         );
 
-        if (!isMounted) {
-          return;
-        }
+        if (!isMounted) return;
 
-        setUser(userData);
-        setRepos(reposData);
-        setRepositoryStats(
-          reposData
-            .filter((repo) => !repo.fork)
-            .map((repo) => ({
-              name: repo.name,
-              htmlUrl: repo.html_url,
-              primaryLanguage: repo.language,
-              primaryLanguageColor: LANGUAGE_COLORS[repo.language ?? ''] ?? '#b8b2b0',
-              stars: repo.stargazers_count,
-              forks: repo.forks_count,
-              commitCount: null,
-              lastActivityAt: repo.pushed_at ?? repo.updated_at,
-              visibility: 'public' as const,
-            }))
-        );
-        setSummary(buildSummary(reposData, repoLanguageData));
+        if (isCurrentUser(staticData, username)) {
+          applyStaticData(staticData);
+          try {
+            localStorage.setItem(cacheKey, JSON.stringify(staticData));
+          } catch {
+            // Non-critical: localStorage can be unavailable or full.
+          }
+        }
       } catch (err) {
-        if (isMounted) {
-          if (err instanceof DOMException && err.name === 'AbortError') {
-            return;
-          }
-
-          setError(err instanceof Error ? err.message : 'Une erreur est survenue');
-        }
+        if (!isMounted || (err instanceof DOMException && err.name === 'AbortError')) return;
+        setError(err instanceof Error ? err.message : 'Une erreur est survenue');
       } finally {
-        if (isMounted) {
-          setLoading(false);
-        }
+        if (isMounted) setLoading(false);
       }
     };
 
@@ -232,5 +154,15 @@ export function useGitHubData(username: string) {
     };
   }, [username]);
 
-  return { repos, repositoryStats, user, summary, loading, error };
+  return {
+    repos,
+    repositoryStats,
+    user,
+    summary,
+    contributionWeeks,
+    contributionTotal,
+    loading,
+    error,
+    contributionsError,
+  };
 }

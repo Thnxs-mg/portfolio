@@ -3,6 +3,7 @@ import React from 'react';
 import { SKILLS, TRANSLATIONS } from '../../constants';
 import { Language } from '../../types';
 import { CapsuleDivider } from '../Shared/StyledForms';
+import { useRevealOnScroll } from '../../hooks/useRevealOnScroll';
 
 interface SkillsSectionProps {
   language: Language;
@@ -28,16 +29,17 @@ const SkillBar: React.FC<{ name: string | Record<Language, string>; level: numbe
 
 const SkillsSection: React.FC<SkillsSectionProps> = ({ language }) => {
   const t = TRANSLATIONS[language];
+  const revealRef = useRevealOnScroll<HTMLElement>();
   return (
-    <section id="skills" className="py-16 sm:py-24 px-4 sm:px-6">
+    <section ref={revealRef} id="skills" className="py-16 sm:py-24 px-4 sm:px-6">
       <div className="max-w-5xl mx-auto">
-        <CapsuleDivider className="mb-8 sm:mb-8 w-fit mx-auto md:mx-0">
+        <CapsuleDivider className="portfolio-reveal mb-8 sm:mb-8 w-fit mx-auto md:mx-0">
           {t.sections.skills}
         </CapsuleDivider>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-12 lg:gap-x-20 gap-y-12 sm:gap-y-16">
           {/* Backend */}
-          <div className="scroll-mt-24">
+          <div className="portfolio-reveal premium-surface scroll-mt-24 rounded-[1.75rem] p-6">
             <h3 className="text-lg sm:text-xl font-black uppercase mb-6 sm:mb-8 text-[#b8b2b0] flex items-center gap-3">
               <span className="w-6 sm:w-8 h-1 bg-[#b8b2b0] rounded-full"></span>
               Back-end
@@ -46,7 +48,7 @@ const SkillsSection: React.FC<SkillsSectionProps> = ({ language }) => {
           </div>
 
           {/* Frontend */}
-          <div className="scroll-mt-24">
+          <div className="portfolio-reveal premium-surface scroll-mt-24 rounded-[1.75rem] p-6">
             <h3 className="text-lg sm:text-xl font-black uppercase mb-6 sm:mb-8 text-[#b8b2b0] flex items-center gap-3">
               <span className="w-6 sm:w-8 h-1 bg-[#b8b2b0] rounded-full"></span>
               Front-end
@@ -55,7 +57,7 @@ const SkillsSection: React.FC<SkillsSectionProps> = ({ language }) => {
           </div>
 
           {/* Databases */}
-          <div className="scroll-mt-24">
+          <div className="portfolio-reveal premium-surface scroll-mt-24 rounded-[1.75rem] p-6">
             <h3 className="text-lg sm:text-xl font-black uppercase mb-6 sm:mb-8 text-[#b8b2b0] flex items-center gap-3">
               <span className="w-6 sm:w-8 h-1 bg-[#b8b2b0] rounded-full"></span>
               Databases
@@ -64,7 +66,7 @@ const SkillsSection: React.FC<SkillsSectionProps> = ({ language }) => {
           </div>
 
           {/* Languages */}
-          <div className="scroll-mt-24">
+          <div className="portfolio-reveal premium-surface scroll-mt-24 rounded-[1.75rem] p-6">
             <h3 className="text-lg sm:text-xl font-black uppercase mb-8 text-[#b8b2b0] flex items-center gap-3">
               <span className="w-6 sm:w-8 h-1 bg-[#b8b2b0] rounded-full"></span>
               {language === 'fr' ? 'Langues' : 'Languages'}
