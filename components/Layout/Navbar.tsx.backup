@@ -101,7 +101,6 @@ const Navbar: React.FC<NavbarProps> = ({ language, setLanguage, isDark, toggleTh
     if (window.performance.now() < pillAnimationLockUntilRef.current) return;
 
     if (pendingCrossRouteResetRef.current) {
-      pendingCrossRouteResetRef.current = false;
       placePillOnKey('home', false);
       return;
     }
@@ -218,33 +217,17 @@ const Navbar: React.FC<NavbarProps> = ({ language, setLanguage, isDark, toggleTh
         activeKeyRef.current = targetId;
         setActiveK(targetId);
         placePillOnKey(targetId, true);
-        scrollLockUntilRef.current = window.performance.now() + 300;
-        pillAnimationLockUntilRef.current = window.performance.now() + 80;
-        setShouldAnimatePill(false); // ensure false
+        scrollLockUntilRef.current = window.performance.now() + 1000;
+
         setPendingScrollTarget(targetId);
         navigate('/');
-
-        // Re-enable animation after a short delay to avoid visual glitch
-        setTimeout(() => {
-          pillAnimationLockUntilRef.current = 0;
-          setShouldAnimatePill(true);
-        }, 80);
       }
     } else {
       cancelActiveScroll();
-      setShouldAnimatePill(false);
+      setShouldAnimatePill(true);
       activeKeyRef.current = href;
       setActiveK(href);
-      // Lock scroll and pill animation during route transition
-      scrollLockUntilRef.current = window.performance.now() + 300;
-      pillAnimationLockUntilRef.current = window.performance.now() + 80;
       navigate(href);
-
-      // Re-enable animation after a short delay
-      setTimeout(() => {
-        pillAnimationLockUntilRef.current = 0;
-        setShouldAnimatePill(true);
-      }, 80);
     }
   };
 
@@ -300,7 +283,8 @@ const Navbar: React.FC<NavbarProps> = ({ language, setLanguage, isDark, toggleTh
                     href={link.href}
                     onClick={(e) => handleNavClick(e, link.href)}
                     {...extraProps}
-                    className="relative px-3 py-1.5 font-semibold text-sm xl:text-base cursor-pointer rounded-full">
+                    className="relative px-3 py-1.5 font-semibold text-sm xl:text-base cursor-pointer rounded-full"
+                  >
                     <span
                       className={`relative z-10 transition-colors duration-150 ${
                         isActive
@@ -326,7 +310,8 @@ const Navbar: React.FC<NavbarProps> = ({ language, setLanguage, isDark, toggleTh
 
               <button
                 onClick={() => setLanguage(language === 'fr' ? 'en' : 'fr')}
-                className="flex items-center gap-2 px-3 py-1 rounded-full border border-[#151621] dark:border-white/30 text-xs xl:text-sm font-bold hover:bg-[#151621] hover:text-white dark:hover:bg-white dark:hover:text-[#151621] transition-all">
+                className="flex items-center gap-2 px-3 py-1 rounded-full border border-[#151621] dark:border-white/30 text-xs xl:text-sm font-bold hover:bg-[#151621] hover:text-white dark:hover:bg-white dark:hover:text-[#151621] transition-all"
+              >
                 <Languages size={14} />
                 {language.toUpperCase()}
               </button>
@@ -356,7 +341,8 @@ const Navbar: React.FC<NavbarProps> = ({ language, setLanguage, isDark, toggleTh
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
             transition={{ duration: 0.18, ease: 'easeOut' }}
-            className="lg:hidden absolute top-full left-0 w-full bg-white dark:bg-[#1a1d23] border-t border-[#BDC3C7] dark:border-white/10 shadow-2xl">
+            className="lg:hidden absolute top-full left-0 w-full bg-white dark:bg-[#1a1d23] border-t border-[#BDC3C7] dark:border-white/10 shadow-2xl"
+          >
             <div className="px-4 py-6 space-y-2">
               {navLinks.map((link) => {
                 const isActive = isLinkActive(link.href);
@@ -370,13 +356,16 @@ const Navbar: React.FC<NavbarProps> = ({ language, setLanguage, isDark, toggleTh
                         ? 'text-[#151621] dark:text-white bg-[#b8b2b0]/15 dark:bg-[#b8b2b0]/20 border border-[#b8b2b0]/30'
                         : 'text-[#151621] dark:text-gray-300 hover:bg-[#b8b2b0] hover:text-white'
                     }`}
-                    >{link.name}</a>
+                  >
+                    {link.name}
+                  </a>
                 );
               })}
               <div className="pt-4 flex justify-between items-center px-4">
                 <button
                   onClick={() => { setLanguage(language === 'fr' ? 'en' : 'fr'); setIsOpen(false); }}
-                  className="flex items-center gap-2 px-6 py-2 rounded-full border border-[#151621] dark:border-white/30 text-sm font-bold dark:text-white">
+                  className="flex items-center gap-2 px-6 py-2 rounded-full border border-[#151621] dark:border-white/30 text-sm font-bold dark:text-white"
+                >
                   <Languages size={18} />
                   {language === 'fr' ? 'Switch to English' : 'Passer en Français'}
                 </button>

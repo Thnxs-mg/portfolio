@@ -29,12 +29,15 @@ const warmChunk = (key: string, factory: () => Promise<unknown>) => {
   return chunkCache[key];
 };
 
-// Précharger les deux chunks pour une navigation instantanée
-  if (typeof window !== 'undefined') {
-    // Prefetch both chunks for instant navigation
+// On pré-charge la page Projets dès que le navigateur est idle
+// pour qu'elle soit déjà en cache au premier clic de l'utilisateur.
+if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
+  (window as Window & typeof globalThis & { requestIdleCallback: (cb: () => void) => void }).requestIdleCallback(() => {
     warmChunk('projects', importProjectsPage);
-    warmChunk('home', importHomePage);
-  }
+  });
+} else if (typeof window !== 'undefined') {
+  setTimeout(() => warmChunk('projects', importProjectsPage), 2000);
+}
 
 // Prefetch on navbar hover
 const prefetchProjects = () => importProjectsPage();
@@ -175,24 +178,7 @@ function getViewStyle(state: ViewState): React.CSSProperties {
   }
 }
 
-const SoftViews: React.FC<{
-  language: Language;
-  // State and setters for Projects page (lifted)
-  selectedProject: Project | null;
-  setSelectedProject: (p: Project | null) => void;
-  selectedCategories: string[];
-  setSelectedCategories: (cats: string[]) => void;
-  selectedTechs: string[];
-  setSelectedTechs: (techs: string[]) => void;
-}> = ({
-  language,
-  selectedProject,
-  setSelectedProject,
-  selectedCategories,
-  setSelectedCategories,
-  selectedTechs,
-  setSelectedTechs,
-}) => {
+const SoftViews: React.FC<{ language: Language }> = ({ language }) => {
   const location = useLocation();
   const prevPathRef = useRef(location.pathname);
 
@@ -200,13 +186,18 @@ const SoftViews: React.FC<{
   const isProjects = location.pathname === '/realisations';
   const isNotFound = !isHome && !isProjects;
 
+  // Montage différé : on ne monte une page que lors du premier accès
+  const homeMounted = useRef(isHome);
+  const projectsMounted = useRef(isProjects);
+
+  const homeViewRef = useRef<HTMLDivElement | null>(null);
+  const projectsViewRef = useRef<HTMLDivElement | null>(null);
+
   // Machine d'état indépendante pour chaque vue
   const home = useViewTransition(isHome ? 'visible' : 'hidden');
   const projects = useViewTransition(isProjects ? 'visible' : 'hidden');
   
   const [isDownloading, setIsDownloading] = useState(false);
-  const homeViewRef = useRef<HTMLDivElement | null>(null);
-  const projectsViewRef = useRef<HTMLDivElement | null>(null);
 
   useLayoutEffect(() => {
     const path = location.pathname;
@@ -230,8 +221,11 @@ const SoftViews: React.FC<{
       const chunkPromise = warmChunk('projects', importProjectsPage);
 
       const startTransition = () => {
-        projects.setStateRaw('entering');
+        projectsMounted.current = true;
+        home.clearTimers();
+        projects.clearTimers();
         home.setStateRaw('leaving');
+        projects.setStateRaw('entering');
 
         requestAnimationFrame(() => {
           applyScroll();
@@ -269,8 +263,11 @@ const SoftViews: React.FC<{
       const chunkPromise = warmChunk('home', importHomePage);
 
       const startTransition = () => {
-        home.setStateRaw('entering');
+        homeMounted.current = true;
+        home.clearTimers();
+        projects.clearTimers();
         projects.setStateRaw('leaving');
+        home.setStateRaw('entering');
 
         requestAnimationFrame(() => {
           applyScroll();
@@ -301,9 +298,11 @@ const SoftViews: React.FC<{
     // ── Fallback : accès direct / refresh / 404 ───────────────────────────────
     applyScroll();
     if (isHome) {
+      homeMounted.current = true;
       home.setStateRaw('visible');
       projects.setStateRaw('hidden');
     } else if (isProjects) {
+      projectsMounted.current = true;
       projects.setStateRaw('visible');
       home.setStateRaw('hidden');
     } else {
@@ -311,7 +310,7 @@ const SoftViews: React.FC<{
       projects.setStateRaw('hidden');
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [location.pathname, selectedProject, selectedCategories, selectedTechs]);
+  }, [location.pathname]);
 
   return (
     <div style={{ position: 'relative' }}>
@@ -325,7 +324,7 @@ const SoftViews: React.FC<{
         aria-hidden={home.state === 'hidden'}
       >
         <Suspense fallback={null}>
-          <HomePage language={language} />
+          {homeMounted.current && <HomePage language={language} />}
         </Suspense>
       </div>
 
@@ -336,15 +335,7 @@ const SoftViews: React.FC<{
         aria-hidden={projects.state === 'hidden'}
       >
         <Suspense fallback={null}>
-          <AllProjectsPage
-            language={language}
-            selectedProject={selectedProject}
-            setSelectedProject={setSelectedProject}
-            selectedCategories={selectedCategories}
-            setSelectedCategories={setSelectedCategories}
-            selectedTechs={selectedTechs}
-            setSelectedTechs={setSelectedTechs}
-          />
+          {projectsMounted.current && <AllProjectsPage language={language} />}
         </Suspense>
       </div>
 
@@ -359,11 +350,6 @@ const SoftViews: React.FC<{
 const App: React.FC = () => {
   const [language, setLanguage] = useState<Language>('fr');
   const [isDark, setIsDark] = useState(false);
-
-  // ---- Lifted state for Projects page ----
-  const [selectedProject, setSelectedProject] = useState<Project | null>(null);
-  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
-  const [selectedTechs, setSelectedTechs] = useState<string[]>([]);
 
   useEffect(() => {
     if ('scrollRestoration' in window.history) {
@@ -393,15 +379,7 @@ const App: React.FC = () => {
         />
 
         <main className="container mx-auto max-w-7xl">
-          <SoftViews
-            language={language}
-            selectedProject={selectedProject}
-            setSelectedProject={setSelectedProject}
-            selectedCategories={selectedCategories}
-            setSelectedCategories={setSelectedCategories}
-            selectedTechs={selectedTechs}
-            setSelectedTechs={setSelectedTechs}
-          />
+          <SoftViews language={language} />
         </main>
 
         <footer className="bg-[#151621] dark:bg-black text-[#BDC3C7] py-20 text-center transition-colors border-t border-white/5 mt-12">
