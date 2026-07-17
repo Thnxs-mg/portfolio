@@ -79,7 +79,7 @@ const revealSoftViewElements = (view: HTMLElement | null) => {
 };
 
 // ─── SoftViews ────────────────────────────────────────────────────────────────
-const TRANSITION_MS = 160;
+const TRANSITION_MS = 200;
 
 type ViewState = 'hidden' | 'entering' | 'visible' | 'leaving';
 
@@ -111,35 +111,45 @@ function getViewStyle(state: ViewState): React.CSSProperties {
     case 'entering':
       return {
         opacity: 0,
-        transform: 'translate3d(0, 10px, 0)',
+        filter: 'blur(1px)',
+        transform: 'translate3d(0, 6px, 0) scale(0.98)',
         pointerEvents: 'none',
         position: 'relative',
-        willChange: 'transform, opacity',
+        willChange: 'transform, opacity, filter',
         zIndex: 2,
+        transition: `opacity ${TRANSITION_MS}ms cubic-bezier(0.25,0.1,0.25,1),
+                     transform ${TRANSITION_MS}ms cubic-bezier(0.25,0.1,0.25,1),
+                     filter ${TRANSITION_MS}ms cubic-bezier(0.25,0.1,0.25,1)`,
       };
     case 'leaving':
       return {
         opacity: 0,
-        transform: 'translate3d(0, -10px, 0)',
+        filter: 'blur(1px)',
+        transform: 'translate3d(0, -6px, 0) scale(0.98)',
         pointerEvents: 'none',
         position: 'absolute',
         inset: 0,
-        transition: `opacity ${TRANSITION_MS}ms cubic-bezier(0.25, 0.46, 0.45, 0.94),
-                     transform ${TRANSITION_MS}ms cubic-bezier(0.25, 0.46, 0.45, 0.94)`,
-        willChange: 'transform, opacity',
+        willChange: 'transform, opacity, filter',
+        transition: `opacity ${TRANSITION_MS}ms cubic-bezier(0.25,0.1,0.25,1),
+                     transform ${TRANSITION_MS}ms cubic-bezier(0.25,0.1,0.25,1),
+                     filter ${TRANSITION_MS}ms cubic-bezier(0.25,0.1,0.25,1)`,
         zIndex: 1,
       };
     case 'visible':
       return {
         opacity: 1,
-        transform: 'translate3d(0, 0, 0)',
+        filter: 'blur(0)',
+        transform: 'translate3d(0, 0, 0) scale(1)',
         pointerEvents: 'auto',
         position: 'relative',
-        transition: `opacity ${TRANSITION_MS}ms cubic-bezier(0.25, 0.46, 0.45, 0.94),
-                     transform ${TRANSITION_MS}ms cubic-bezier(0.25, 0.46, 0.45, 0.94)`,
-        willChange: 'transform, opacity',
+        willChange: 'transform, opacity, filter',
         zIndex: 2,
+        transition: `opacity ${TRANSITION_MS}ms cubic-bezier(0.25, 0.46, 0.45, 0.94),
+                     transform ${TRANSITION_MS}ms cubic-bezier(0.25, 0.46, 0.45, 0.94),
+                     filter ${TRANSITION_MS}ms cubic-bezier(0.25, 0.46, 0.45, 0.94)`,
       };
+    default:
+      return {};
   }
 }
 
