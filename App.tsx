@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useLayoutEffect, useRef, useCallback, Suspense } from 'react';
+import React, { useState, useEffect, useLayoutEffect, useRef, useCallback, Suspense, memo } from 'react';
 import { BrowserRouter as Router, useLocation, useNavigate, Link } from 'react-router-dom';
 
 import Navbar from './components/Layout/Navbar';
@@ -8,18 +8,16 @@ import { Language } from './types';
 import { TopLoader } from './components/Shared/TopLoader';
 
 // ─── Import factories ─────────────────────────────────────────────────────────
-// On garde les factories pour React.lazy (first render path)
-// ET pour le pré-cache manuel via chunkCache.
 const importHomePage = () => import('./components/Sections/HomePage');
 const importProjectsPage = () => import('./components/Sections/AllProject');
 
 const HomePage = React.lazy(importHomePage);
 const AllProjectsPage = React.lazy(importProjectsPage);
 
+const MemoizedHomePage = memo(HomePage);
+const MemoizedAllProjectsPage = memo(AllProjectsPage);
+
 // ─── Chunk cache ──────────────────────────────────────────────────────────────
-// Conserve la Promise résolue pour éviter toute attente réseau lors des
-// navigations successives. Si la Promise est déjà dans le cache, l'appel
-// .then() est microtask-scheduled (< 1 ms) au lieu d'un vrai réseau I/O.
 const chunkCache: Record<string, Promise<unknown>> = {};
 
 const warmChunk = (key: string, factory: () => Promise<unknown>) => {
@@ -29,19 +27,12 @@ const warmChunk = (key: string, factory: () => Promise<unknown>) => {
   return chunkCache[key];
 };
 
-// Précharger les deux chunks pour une navigation instantanée
-  if (typeof window !== 'undefined') {
-    // Prefetch both chunks for instant navigation
-    warmChunk('projects', importProjectsPage);
-    warmChunk('home', importHomePage);
-  }
-
-// Prefetch on navbar hover
+if (typeof window !== 'undefined') {
+  // Preload chunks for faster transitions
+  warmChunk('projects', importProjectsPage);
+  warmChunk('home', importHomePage);
+}
 const prefetchProjects = () => importProjectsPage();
-
-const routerBasename = import.meta.env.BASE_URL === '/'
-  ? undefined
-  : import.meta.env.BASE_URL.replace(/\/$/, '');
 
 // ─── NotFoundPage ─────────────────────────────────────────────────────────────
 const NotFoundPage: React.FC<{ language: Language }> = ({ language }) => (
@@ -69,8 +60,6 @@ const NotFoundPage: React.FC<{ language: Language }> = ({ language }) => (
 );
 
 // ─── revealSoftViewElements ───────────────────────────────────────────────────
-// Force tous les éléments .portfolio-reveal d'une vue à être immédiatement
-// visibles (sans délai de stagger ni transition lente) lors d'un changement de page.
 const revealSoftViewElements = (view: HTMLElement | null) => {
   if (!view) return;
   view.classList.add('instant-reveal');
@@ -82,36 +71,20 @@ const revealSoftViewElements = (view: HTMLElement | null) => {
     el.dataset.revealAway = 'false';
   }
 
-  // Restaure la transition après 2 frames pour les futurs scrolls
   requestAnimationFrame(() => {
     requestAnimationFrame(() => {
-      view.classList.remove('instant-reveal');
+      view.classList.remove('invisible');
     });
   });
 };
 
 // ─── SoftViews ────────────────────────────────────────────────────────────────
-//
-// ARCHITECTURE :
-//   - Les deux pages (Home + Projects) sont gardées en mémoire une fois montées
-//     pour éviter de détruire/recréer les hooks de fetch GitHub à chaque nav.
-//   - L'état `mounted` différé : la page "Projects" n'est montée QUE lors du
-//     premier accès, évitant les fetches réseau inutiles au démarrage.
-//   - Transition via CSS `opacity/transform` à 160 ms. La page sortante prend
-//     `position:absolute` le temps de la transition pour ne pas pousser le layout.
-//   - La page cachée passe à `display:none` (via `hidden`) dès que la transition
-//     est terminée, ce qui :
-//       a) supprime tout scrollbar fantôme
-//       b) retire la page du layout engine du navigateur (0 coût CPU/GPU)
-//       c) préserve l'état React (hooks, fetch cache, scroll position ref)
-//
 const TRANSITION_MS = 160;
 
 type ViewState = 'hidden' | 'entering' | 'visible' | 'leaving';
 
 function useViewTransition(initialState: ViewState) {
   const [state, setStateRaw] = useState<ViewState>(initialState);
-  // On garde une ref pour annuler les timers en cas de navigation rapide
   const timersRef = useRef<number[]>([]);
 
   const clearTimers = useCallback(() => {
@@ -124,7 +97,9 @@ function useViewTransition(initialState: ViewState) {
     timersRef.current.push(id);
   }, []);
 
-  useEffect(() => () => clearTimers(), [clearTimers]);
+  useEffect(() => () => {
+    clearTimers();
+  }, [clearTimers]);
 
   return { state, setStateRaw, clearTimers, schedule };
 }
@@ -132,44 +107,37 @@ function useViewTransition(initialState: ViewState) {
 function getViewStyle(state: ViewState): React.CSSProperties {
   switch (state) {
     case 'hidden':
-      // display:none → complètement hors du layout, aucun scrollbar fantôme
       return { display: 'none' };
-
     case 'entering':
-      // Prêt à animer : visible dans le DOM, opaque à 0, sans transition active
-      // (la transition sera activée dans le prochain tick via 'visible')
       return {
         opacity: 0,
-        transform: 'translateY(10px)',
+        transform: 'translate3d(0, 10px, 0)',
         pointerEvents: 'none',
         position: 'relative',
-        willChange: 'opacity, transform',
+        willChange: 'transform, opacity',
+        zIndex: 2,
       };
-
     case 'leaving':
-      // Sort du flux normal (absolute) pour ne pas pousser le layout entrant
-      // La transition CSS fait fondre la page sortante vers opacity:0
       return {
         opacity: 0,
-        transform: 'translateY(-10px)',
+        transform: 'translate3d(0, -10px, 0)',
         pointerEvents: 'none',
         position: 'absolute',
         inset: 0,
         transition: `opacity ${TRANSITION_MS}ms cubic-bezier(0.25, 0.46, 0.45, 0.94),
                      transform ${TRANSITION_MS}ms cubic-bezier(0.25, 0.46, 0.45, 0.94)`,
-        willChange: 'opacity, transform',
+        willChange: 'transform, opacity',
         zIndex: 1,
       };
-
     case 'visible':
       return {
         opacity: 1,
-        transform: 'translateY(0)',
+        transform: 'translate3d(0, 0, 0)',
         pointerEvents: 'auto',
         position: 'relative',
         transition: `opacity ${TRANSITION_MS}ms cubic-bezier(0.25, 0.46, 0.45, 0.94),
                      transform ${TRANSITION_MS}ms cubic-bezier(0.25, 0.46, 0.45, 0.94)`,
-        willChange: 'opacity, transform',
+        willChange: 'transform, opacity',
         zIndex: 2,
       };
   }
@@ -177,7 +145,6 @@ function getViewStyle(state: ViewState): React.CSSProperties {
 
 const SoftViews: React.FC<{
   language: Language;
-  // State and setters for Projects page (lifted)
   selectedProject: Project | null;
   setSelectedProject: (p: Project | null) => void;
   selectedCategories: string[];
@@ -195,23 +162,26 @@ const SoftViews: React.FC<{
 }) => {
   const location = useLocation();
   const prevPathRef = useRef(location.pathname);
+  const [isDownloading, setIsDownloading] = useState(false);
+  const homeViewRef = useRef<HTMLDivElement | null>(null);
+  const projectsViewRef = useRef<HTMLDivElement | null>(null);
+  const hideTimerRef = useRef<number | null>(null);
+  const loaderTimerRef = useRef<number | null>(null);
 
   const isHome = location.pathname === '/';
   const isProjects = location.pathname === '/realisations';
   const isNotFound = !isHome && !isProjects;
 
-  // Machine d'état indépendante pour chaque vue
   const home = useViewTransition(isHome ? 'visible' : 'hidden');
   const projects = useViewTransition(isProjects ? 'visible' : 'hidden');
-  
-  const [isDownloading, setIsDownloading] = useState(false);
-  const homeViewRef = useRef<HTMLDivElement | null>(null);
-  const projectsViewRef = useRef<HTMLDivElement | null>(null);
 
   useLayoutEffect(() => {
     const path = location.pathname;
     const prev = prevPathRef.current;
+
+    // CRITICAL: Guard clause - only run on actual pathname changes
     if (prev === path) return;
+
     prevPathRef.current = path;
 
     const targetSection = consumePendingScrollTarget();
@@ -224,133 +194,164 @@ const SoftViews: React.FC<{
       }
     };
 
-    // ── Home → Projects ──────────────────────────────────────────────────────
-    if (prev === '/' && path === '/realisations') {
-      // On lance le chargement du chunk (synchrone si déjà en cache).
-      const chunkPromise = warmChunk('projects', importProjectsPage);
-
-      const startTransition = () => {
+    // -------------------------------------------------
+    // CASE 1 – Real route change → start transition
+    // -------------------------------------------------
+    const startTransition = () => {
+      // ----- Home → Projects -----
+      if (prev === '/' && path === '/realisations') {
         projects.setStateRaw('entering');
         home.setStateRaw('leaving');
 
         requestAnimationFrame(() => {
-          applyScroll();
+          projects.setStateRaw('visible');
           revealSoftViewElements(projectsViewRef.current);
 
+          // Scroll after ensuring DOM is updated
           requestAnimationFrame(() => {
-            projects.setStateRaw('visible');
-            home.schedule(() => home.setStateRaw('hidden'), TRANSITION_MS);
+            applyScroll();
           });
+
+          if (hideTimerRef.current) {
+            window.clearTimeout(hideTimerRef.current);
+          }
+          hideTimerRef.current = window.setTimeout(() => {
+            home.setStateRaw('hidden');
+          }, TRANSITION_MS);
         });
-      };
-
-      // Si le chunk est déjà résolu (microtask ≈ 0 ms), on démarre la
-      // transition dans la même frame. Sinon on affiche le TopLoader.
-      let resolved = false;
-      chunkPromise.then(() => {
-        resolved = true;
-        setIsDownloading(false);
-        startTransition();
-      });
-
-      // Délai de 32 ms (2 frames) avant d'afficher le loader pour éviter
-      // un flash du loader sur les navigations ultra-rapides (chunk en cache).
-      const loaderTimer = window.setTimeout(() => {
-        if (!resolved) setIsDownloading(true);
-      }, 32);
-
-      // Cleanup du timer si le chunk se résout avant 32 ms
-      chunkPromise.then(() => window.clearTimeout(loaderTimer));
-      return;
-    }
-
-    // ── Projects → Home ──────────────────────────────────────────────────────
-    if (prev === '/realisations' && path === '/') {
-      const chunkPromise = warmChunk('home', importHomePage);
-
-      const startTransition = () => {
+      }
+      // ----- Projects → Home -----
+      else if (prev === '/realisations' && path === '/') {
         home.setStateRaw('entering');
         projects.setStateRaw('leaving');
 
         requestAnimationFrame(() => {
-          applyScroll();
+          home.setStateRaw('visible');
           revealSoftViewElements(homeViewRef.current);
 
+          // Scroll after ensuring DOM is updated
           requestAnimationFrame(() => {
-            home.setStateRaw('visible');
-            projects.schedule(() => projects.setStateRaw('hidden'), TRANSITION_MS);
+            applyScroll();
           });
-        });
-      };
 
+          if (hideTimerRef.current) {
+            window.clearTimeout(hideTimerRef.current);
+          }
+          hideTimerRef.current = window.setTimeout(() => {
+            projects.setStateRaw('hidden');
+          }, TRANSITION_MS);
+        });
+      }
+      // ----- Fallback: direct access / refresh / 404 -----
+      else {
+        applyScroll();
+        if (isHome) {
+          home.setStateRaw('visible');
+          projects.setStateRaw('hidden');
+        } else if (isProjects) {
+          projects.setStateRaw('visible');
+          home.setStateRaw('hidden');
+        } else {
+          home.setStateRaw('hidden');
+          projects.setStateRaw('hidden');
+        }
+      }
+    };
+
+    // ----- Chunk loading logic -----
+    const isHomeToProjects = prev === '/' && path === '/realisations';
+    const isProjectsToHome = prev === '/realisations' && path === '/';
+    let chunkPromise: Promise<unknown> | null = null;
+
+    if (isHomeToProjects) {
+      chunkPromise = warmChunk('projects', importProjectsPage);
+    } else if (isProjectsToHome) {
+      chunkPromise = warmChunk('home', importHomePage);
+    }
+
+    if (chunkPromise) {
       let resolved = false;
       chunkPromise.then(() => {
-        resolved = true;
-        setIsDownloading(false);
-        startTransition();
+        const stillHomeToProjects = prev === '/' && path === '/realisations';
+        const stillProjectsToHome = prev === '/realisations' && path === '/';
+        if ((isHomeToProjects && stillHomeToProjects) || (isProjectsToHome && stillProjectsToHome)) {
+          resolved = true;
+          setIsDownloading(false);
+          startTransition();
+        }
       });
 
-      const loaderTimer = window.setTimeout(() => {
-        if (!resolved) setIsDownloading(true);
+      if (loaderTimerRef.current) {
+        window.clearTimeout(loaderTimerRef.current);
+      }
+      loaderTimerRef.current = window.setTimeout(() => {
+        if (!resolved) {
+          setIsDownloading(true);
+        }
       }, 32);
 
-      chunkPromise.then(() => window.clearTimeout(loaderTimer));
-      return;
+      chunkPromise.then(() => {
+        if (loaderTimerRef.current) {
+          window.clearTimeout(loaderTimerRef.current);
+          loaderTimerRef.current = null;
+        }
+      });
+    } else {
+      startTransition();
     }
 
-    // ── Fallback : accès direct / refresh / 404 ───────────────────────────────
-    applyScroll();
-    if (isHome) {
-      home.setStateRaw('visible');
-      projects.setStateRaw('hidden');
-    } else if (isProjects) {
-      projects.setStateRaw('visible');
-      home.setStateRaw('hidden');
-    } else {
-      home.setStateRaw('hidden');
-      projects.setStateRaw('hidden');
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [location.pathname, selectedProject, selectedCategories, selectedTechs]);
+    // Cleanup function
+    return () => {
+      if (hideTimerRef.current) {
+        window.clearTimeout(hideTimerRef.current);
+        hideTimerRef.current = null;
+      }
+      if (loaderTimerRef.current) {
+        window.clearTimeout(loaderTimerRef.current);
+        loaderTimerRef.current = null;
+      }
+    };
+  }, [location]);
 
   return (
     <div style={{ position: 'relative' }}>
-      
       {isDownloading && <TopLoader />}
 
-      {/* ── Vue Accueil ── */}
-      <div
-        ref={homeViewRef}
-        style={getViewStyle(home.state)}
-        aria-hidden={home.state === 'hidden'}
-      >
-        <Suspense fallback={null}>
-          <HomePage language={language} />
-        </Suspense>
+      {/* Container for view transitions */}
+      <div style={{ position: 'relative' }}>
+        {/* ── Home View ── */}
+        <div
+          ref={homeViewRef}
+          style={getViewStyle(home.state)}
+          aria-hidden={home.state === 'hidden'}
+        >
+          <Suspense fallback={null}>
+            <MemoizedHomePage language={language} />
+          </Suspense>
+        </div>
+
+        {/* ── Projects View ── */}
+        <div
+          ref={projectsViewRef}
+          style={getViewStyle(projects.state)}
+          aria-hidden={projects.state === 'hidden'}
+        >
+          <Suspense fallback={null}>
+            <MemoizedAllProjectsPage
+              language={language}
+              selectedProject={selectedProject}
+              setSelectedProject={setSelectedProject}
+              selectedCategories={selectedCategories}
+              setSelectedCategories={setSelectedCategories}
+              selectedTechs={selectedTechs}
+              setSelectedTechs={setSelectedTechs}
+            />
+          </Suspense>
+        </div>
       </div>
 
-      {/* ── Vue Projets ── */}
-      <div
-        ref={projectsViewRef}
-        style={getViewStyle(projects.state)}
-        aria-hidden={projects.state === 'hidden'}
-      >
-        <Suspense fallback={null}>
-          <AllProjectsPage
-            language={language}
-            selectedProject={selectedProject}
-            setSelectedProject={setSelectedProject}
-            selectedCategories={selectedCategories}
-            setSelectedCategories={setSelectedCategories}
-            selectedTechs={selectedTechs}
-            setSelectedTechs={setSelectedTechs}
-          />
-        </Suspense>
-      </div>
-
-      {/* ── 404 ── */}
+      {/* ── 404 Page ── */}
       {isNotFound && <NotFoundPage language={language} />}
-
     </div>
   );
 };
@@ -378,12 +379,12 @@ const App: React.FC = () => {
   const toggleTheme = useCallback(() => setIsDark((d) => !d), []);
 
   return (
-    <Router basename={routerBasename}>
+    <Router basename={import.meta.env.BASE_URL === '/' ? undefined : import.meta.env.BASE_URL.replace(/\/$/, '')}>
       <div className="min-h-screen relative overflow-x-hidden selection:bg-[#b8b2b0]/30 selection:text-[#151621] transition-colors duration-300">
-
         <BlobTopRight />
         <BlobBottomLeft />
 
+        {/* Add logging to Navbar clicks (we can't modify Navbar directly here, so we log location changes via useEffect) */}
         <Navbar
           language={language}
           setLanguage={setLanguage}
@@ -412,7 +413,6 @@ const App: React.FC = () => {
             </p>
           </div>
         </footer>
-
       </div>
     </Router>
   );

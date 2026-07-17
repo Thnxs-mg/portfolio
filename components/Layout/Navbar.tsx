@@ -77,17 +77,21 @@ const Navbar: React.FC<NavbarProps> = ({ language, setLanguage, isDark, toggleTh
   };
 
   const syncPillToActiveKey = () => {
+    console.log('[Navbar] syncPillToActiveKey called');
     const nextStyle = getPillStyleForKey(activeKeyRef.current);
 
     if (!nextStyle) {
+      console.log('[Navbar] syncPillToActiveKey: no style found, hiding pill');
       setPillStyle((current) => ({ ...current, visible: false }));
       return;
     }
 
+    console.log('[Navbar] syncPillToActiveKey: setting pill style', nextStyle);
     setPillStyle(nextStyle);
   };
 
   const placePillOnKey = (key: string, visible = true) => {
+    console.log(`[Navbar] placePillOnKey: key=${key}, visible=${visible}`);
     const nextStyle = getPillStyleForKey(key);
     if (!nextStyle) return;
 
@@ -98,27 +102,35 @@ const Navbar: React.FC<NavbarProps> = ({ language, setLanguage, isDark, toggleTh
   };
 
   useLayoutEffect(() => {
+    console.log(`[Navbar] useLayoutEffect: window.performance.now()=${window.performance.now()}, pillAnimationLockUntilRef=${pillAnimationLockUntilRef.current}`);
     if (window.performance.now() < pillAnimationLockUntilRef.current) return;
 
     if (pendingCrossRouteResetRef.current) {
+      console.log('[Navbar] pendingCrossRouteResetRef true, placing pill on home (false)');
       pendingCrossRouteResetRef.current = false;
       placePillOnKey('home', false);
       return;
     }
 
+    console.log('[Navbar] syncPillToActiveKey from useLayoutEffect');
     syncPillToActiveKey();
   }, [activeKey, language]);
 
   useEffect(() => {
+    console.log('[Navbar] adding resize listener');
     window.addEventListener('resize', syncPillToActiveKey);
     return () => window.removeEventListener('resize', syncPillToActiveKey);
   }, []);
 
   useEffect(() => {
+    console.log('[Navbar] adding section-scroll-start listener');
     const handleSectionScrollStart = (event: Event) => {
       const { targetSection, duration = SCROLL_DURATION } = (event as SectionScrollStartEvent).detail;
 
+      console.log(`[Navbar] section-scroll-start event: targetSection=${targetSection}, duration=${duration}`);
+
       if (pendingCrossRouteResetRef.current) {
+        console.log('[Navbar] pendingCrossRouteResetRef true in handler');
         pendingCrossRouteResetRef.current = false;
         setShouldAnimatePill(false);
         activeKeyRef.current = targetSection;
@@ -126,6 +138,7 @@ const Navbar: React.FC<NavbarProps> = ({ language, setLanguage, isDark, toggleTh
         placePillOnKey(targetSection, true);
 
         requestAnimationFrame(() => {
+          console.log('[Navbar] RAF after section-scroll-start (pendingCrossRouteReset)');
           pillAnimationLockUntilRef.current = window.performance.now() + 80;
           setShouldAnimatePill(true);
         });
@@ -136,6 +149,7 @@ const Navbar: React.FC<NavbarProps> = ({ language, setLanguage, isDark, toggleTh
       activeKeyRef.current = targetSection;
       setActiveK(targetSection);
       scrollLockUntilRef.current = window.performance.now() + duration + 120;
+      console.log(`[Navbar] set scrollLockUntilRef to ${scrollLockUntilRef.current}`);
     };
 
     window.addEventListener('portfolio:section-scroll-start', handleSectionScrollStart);
@@ -146,21 +160,27 @@ const Navbar: React.FC<NavbarProps> = ({ language, setLanguage, isDark, toggleTh
 
   // --- Route active : garde les pages dédiées synchronisées, y compris retour navigateur ---
   useEffect(() => {
+    console.log(`[Navbar] location.pathname changed: ${location.pathname}`);
     if (location.pathname === '/') return;
     if (activeKeyRef.current === location.pathname) return;
 
     activeKeyRef.current = location.pathname;
     setActiveK(location.pathname);
+    console.log(`[Navbar] activeKey set to ${location.pathname}`);
   }, [location.pathname]);
 
   // --- Scroll spy : uniquement sur la homepage, piloté par la position réelle de la page ---
   useLayoutEffect(() => {
+    console.log(`[Navbar] useLayoutEffect scroll spy: location.pathname=${location.pathname}`);
     if (location.pathname !== '/') return;
 
     const targetSection = (location.state as NavigationState | null)?.scrollTo;
 
     const detectSection = () => {
-      if (window.performance.now() < scrollLockUntilRef.current) return;
+      if (window.performance.now() < scrollLockUntilRef.current) {
+        console.log('[Navbar] scroll spy skipped due to lock');
+        return;
+      }
 
       const scrollY = window.scrollY + 130;
       let current = 'home';
@@ -171,6 +191,7 @@ const Navbar: React.FC<NavbarProps> = ({ language, setLanguage, isDark, toggleTh
         }
       }
       if (activeKeyRef.current !== current) {
+        console.log(`[Navbar] scroll spy detected change: ${activeKeyRef.current} -> ${current}`);
         activeKeyRef.current = current;
         setActiveK(current);
       }
@@ -179,11 +200,13 @@ const Navbar: React.FC<NavbarProps> = ({ language, setLanguage, isDark, toggleTh
     window.addEventListener('scroll', detectSection, { passive: true });
     const timer = window.setTimeout(() => {
       if (!targetSection) {
+        console.log('[Navbar] scroll spy timer fired, detectSection');
         detectSection();
       }
     }, 50);
 
     return () => {
+      console.log('[Navbar] cleaning scroll spy');
       window.removeEventListener('scroll', detectSection);
       clearTimeout(timer);
     };
@@ -191,21 +214,28 @@ const Navbar: React.FC<NavbarProps> = ({ language, setLanguage, isDark, toggleTh
 
   // --- isLinkActive : basé uniquement sur activeKey, jamais sur location ---
   const isLinkActive = (href: string): boolean => {
-    return activeKey === getNavKey(href);
+    const navKey = getNavKey(href);
+    const result = activeKey === navKey;
+    console.log(`[Navbar] isLinkActive: href=${href}, navKey=${navKey}, activeKey=${activeKey}, result=${result}`);
+    return result;
   };
 
   // --- Click handler ---
   const handleNavClick = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
+    console.log(`[Navbar] handleNavClick: e.preventDefault, href=${href}`);
     e.preventDefault();
     setIsOpen(false);
 
     if (href.startsWith('#')) {
       const targetId = href.substring(1);
+      console.log(`[Navbar] anchor nav to #${targetId}`);
       cancelActiveScroll();
 
       if (location.pathname === '/') {
+        console.log('[Navbar] on homepage, running WithNativeSmoothDisabled');
         // Sur la homepage, le scroll-spy fera suivre la capsule pendant le mouvement.
         runWithNativeSmoothDisabled(() => {
+          console.log(`[Navbar] scroller.scrollTo ${targetId} with options`);
           scroller.scrollTo(targetId, {
             smooth: 'easeInOutCubic',
             duration: SCROLL_DURATION,
@@ -213,6 +243,7 @@ const Navbar: React.FC<NavbarProps> = ({ language, setLanguage, isDark, toggleTh
           });
         }, SCROLL_DURATION + 120);
       } else {
+        console.log('[Navbar] not on homepage, navigating to /');
         // Navigation depuis une autre page vers la homepage
         setShouldAnimatePill(false);
         activeKeyRef.current = targetId;
@@ -222,15 +253,18 @@ const Navbar: React.FC<NavbarProps> = ({ language, setLanguage, isDark, toggleTh
         pillAnimationLockUntilRef.current = window.performance.now() + 80;
         setShouldAnimatePill(false); // ensure false
         setPendingScrollTarget(targetId);
+        console.log(`[Navbar] set pendingScrollTarget to ${targetId}`);
         navigate('/');
 
         // Re-enable animation after a short delay to avoid visual glitch
         setTimeout(() => {
+          console.log('[Navbar] re-enabling pill animation after delay');
           pillAnimationLockUntilRef.current = 0;
           setShouldAnimatePill(true);
         }, 80);
       }
     } else {
+      console.log(`[Navbar] route nav to ${href}`);
       cancelActiveScroll();
       setShouldAnimatePill(false);
       activeKeyRef.current = href;
@@ -238,10 +272,12 @@ const Navbar: React.FC<NavbarProps> = ({ language, setLanguage, isDark, toggleTh
       // Lock scroll and pill animation during route transition
       scrollLockUntilRef.current = window.performance.now() + 300;
       pillAnimationLockUntilRef.current = window.performance.now() + 80;
+      console.log(`[Navbar] set scrollLockUntilRef to ${scrollLockUntilRef.current}, pillAnimationLockUntilRef to ${pillAnimationLockUntilRef.current}`);
       navigate(href);
 
       // Re-enable animation after a short delay
       setTimeout(() => {
+        console.log('[Navbar] re-enabling pill animation after route nav delay');
         pillAnimationLockUntilRef.current = 0;
         setShouldAnimatePill(true);
       }, 80);
@@ -272,7 +308,7 @@ const Navbar: React.FC<NavbarProps> = ({ language, setLanguage, isDark, toggleTh
 
           {/* Desktop Nav */}
           <div className="hidden lg:flex items-center space-x-6 xl:space-x-8">
-            <div ref={navListRef} className="relative flex items-center space-x-1 xl:space-x-2 mr-4 xl:mr-6 border-r border-[#BDC3C7] pr-6 dark:border-white/10">
+            <div ref={navListRef} className="relative flex items-center space-x-1 xl:space-x-2 mr-4 xl:mr-6 border-r border-[#BDC3C7] pr-6 xl:mr-6 border-r border-[#BDC3C7] pr-6 dark:border-white/10">
               <span
                 className={`pointer-events-none absolute top-1/2 left-0 h-[calc(100%-4px)] -translate-y-1/2 rounded-full bg-[#151621]/8 dark:bg-white/10 ${
                   shouldAnimatePill
@@ -327,9 +363,9 @@ const Navbar: React.FC<NavbarProps> = ({ language, setLanguage, isDark, toggleTh
               <button
                 onClick={() => setLanguage(language === 'fr' ? 'en' : 'fr')}
                 className="flex items-center gap-2 px-3 py-1 rounded-full border border-[#151621] dark:border-white/30 text-xs xl:text-sm font-bold hover:bg-[#151621] hover:text-white dark:hover:bg-white dark:hover:text-[#151621] transition-all">
-                <Languages size={14} />
-                {language.toUpperCase()}
-              </button>
+                  <Languages size={14} />
+                  {language.toUpperCase()}
+                </button>
             </div>
           </div>
 
