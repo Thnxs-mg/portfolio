@@ -217,9 +217,12 @@ const SoftViews: React.FC<{
           projects.setStateRaw('visible');
           revealSoftViewElements(projectsViewRef.current);
 
-          // Scroll after ensuring DOM is updated
+          // Wait for React to flush updates and paint before scrolling
           requestAnimationFrame(() => {
-            applyScroll();
+            // Allow paint to finish, then schedule scroll after paint
+            setTimeout(() => {
+              applyScroll();
+            }, 0);
           });
 
           if (hideTimerRef.current) {
@@ -239,9 +242,12 @@ const SoftViews: React.FC<{
           home.setStateRaw('visible');
           revealSoftViewElements(homeViewRef.current);
 
-          // Scroll after ensuring DOM is updated
+          // Wait for React to flush updates and paint before scrolling
           requestAnimationFrame(() => {
-            applyScroll();
+            // Allow paint to finish, then schedule scroll after paint
+            setTimeout(() => {
+              applyScroll();
+            }, 0);
           });
 
           if (hideTimerRef.current) {

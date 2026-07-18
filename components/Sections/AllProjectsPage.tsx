@@ -34,7 +34,7 @@ const AllProjectsPage: React.FC<AllProjectsPageProps> = ({ language }) => {
     const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
     const [selectedTechs, setSelectedTechs] = useState<string[]>([]);
 
-    useEffect(() => {
+    useLayoutEffect(() => {
         const isLocked = selectedProject !== null || isFilterOpen;
         document.body.style.overflow = isLocked ? 'hidden' : '';
         return () => {
@@ -123,7 +123,7 @@ const AllProjectsPage: React.FC<AllProjectsPageProps> = ({ language }) => {
     }, [columnCount]);
 
     return (
-        <div ref={revealRef} className="min-h-screen pt-28 pb-12 px-4 sm:px-6">
+        <div ref={revealRef} className="pt-28 pb-12 px-4 sm:px-6 box-border min-h-[inherit]">
             <div className="max-w-6xl mx-auto">
                 <div className="portfolio-reveal flex flex-col md:flex-row items-center justify-between gap-6 mb-12 relative">
                     <Link to="/" className="group flex items-center gap-2 text-[#151621] dark:text-white font-black uppercase tracking-widest text-xs hover:text-[#b8b2b0] transition-colors">
@@ -341,7 +341,58 @@ const AllProjectsPage: React.FC<AllProjectsPageProps> = ({ language }) => {
                                     )}
                                     <div className="mb-8">
                                         <h3 className="text-xs font-black text-[#b8b2b0] uppercase tracking-widest mb-3>{language === 'fr' ? 'Technologies utilisées' : 'Technologies Used'}</h3>
-                                        <div className="flex flex-wrap gap-2>{selectedProject.technologies.map((tech, i) => (<span key={i} className="px-3 py-1.5 bg-slate-100 dark:bg-white/5 text-[#151621] dark:text-white text-xs font-bold rounded-lg border border-slate-200 dark:border-white/10">{tech}</span>))}</div>
+                                        <div className="flex flex-wrap gap-2">
+                                            {(() => {
+                                                const backendSet = new Set(['Django', 'PostgreSQL', 'Express', 'Prisma', 'Node.js', 'Spring Boot', 'Python', 'Java']);
+                                                const frontendSet = new Set(['React', 'TypeScript', 'JavaScript', 'HTML', 'CSS']);
+                                                const deploymentSet = new Set(['Render', 'Neon', 'AWS', 'Heroku', 'Vercel', 'Netlify']);
+                                                const backend: string[] = [];
+                                                const frontend: string[] = [];
+                                                const deployment: string[] = [];
+                                                selectedProject.technologies.forEach(tech => {
+                                                    if (backendSet.has(tech)) backend.push(tech);
+                                                    else if (frontendSet.has(tech)) frontend.push(tech);
+                                                    else if (deploymentSet.has(tech)) deployment.push(tech);
+                                                });
+                                                const backendTitle = language === 'fr' ? 'Backend' : 'Backend';
+                                                const frontendTitle = language === 'fr' ? 'Frontend' : 'Frontend';
+                                                const deployTitle = language === 'fr' ? 'Déploiement' : 'Deployment';
+                                                return (
+                                                    <>
+                                                        {backend.length > 0 && (
+                                                            <div className="flex flex-col gap-1">
+                                                                <span className="text-xs font-bold uppercase tracking-wider">{backendTitle}</span>
+                                                                {backend.map((tech, idx) => (
+                                                                    <span key={idx} className="px-3 py-1.5 bg-slate-100 dark:bg-white/5 text-[#151621] dark:text-white text-xs font-bold rounded-lg border border-slate-200 dark:border-white/10">
+                                                                        {tech}
+                                                                    </span>
+                                                                ))}
+                                                            </div>
+                                                        )}
+                                                        {frontend.length > 0 && (
+                                                            <div className="flex flex-col gap-1 ml-4">
+                                                                <span className="text-xs font-bold uppercase tracking-wider">{frontendTitle}</span>
+                                                                {frontend.map((tech, idx) => (
+                                                                    <span key={idx} className="px-3 py-1.5 bg-slate-100 dark:bg-white/5 text-[#151621] dark:text-white text-xs font-bold rounded-lg border border-slate-200 dark:border-white/10">
+                                                                        {tech}
+                                                                    </span>
+                                                                ))}
+                                                            </div>
+                                                        )}
+                                                        {deployment.length > 0 && (
+                                                            <div className="flex flex-col gap-1 ml-4">
+                                                                <span className="text-xs font-bold uppercase tracking-wider">{deployTitle}</span>
+                                                                {deployment.map((tech, idx) => (
+                                                                    <span key={idx} className="px-3 py-1.5 bg-slate-100 dark:bg-white/5 text-[#151621] dark:text-white text-xs font-bold rounded-lg border border-slate-200 dark:border-white/10">
+                                                                        {tech}
+                                                                    </span>
+                                                                ))}
+                                                            </div>
+                                                        )}
+                                                    </>
+                                                );
+                                            })()}
+                                        </div>
                                     </div>
 
                                     <div className="flex flex-col sm:flex-row gap-4 pt-6 border-t border-slate-100 dark:border-white/10 mt-auto">

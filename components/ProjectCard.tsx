@@ -57,7 +57,65 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, language }) => {
             ))}
           </div>
         )}
-        <div className="mt-auto flex flex-wrap gap-2">{project.technologies.slice(0, 4).map((tech, i) => (<span key={i} className="px-2 py-1 bg-slate-100 dark:bg-white/10 text-[#151621] dark:text-gray-300 text-[10px] font-bold uppercase tracking-widest rounded-md">{tech}</span>))}{project.technologies.length > 4 && <span className="px-2 py-1 text-slate-400 text-[10px] font-bold">+{project.technologies.length - 4}</span>}</div>
+        <div className="mt-auto flex flex-wrap gap-2">
+          {/* Compute main technologies by category */}
+          {(() => {
+            const backendSet = new Set(['Django', 'PostgreSQL', 'Express', 'Prisma', 'Node.js', 'Spring Boot', 'Python', 'Java']);
+            const frontendSet = new Set(['React', 'TypeScript', 'JavaScript', 'HTML', 'CSS']);
+            const deploymentSet = new Set(['Render', 'Neon', 'AWS', 'Heroku', 'Vercel', 'Netlify']);
+
+            const backend: string[] = [];
+            const frontend: string[] = [];
+            const deployment: string[] = [];
+
+            project.technologies.forEach(tech => {
+              if (backendSet.has(tech)) backend.push(tech);
+              else if (frontendSet.has(tech)) frontend.push(tech);
+              else if (deploymentSet.has(tech)) deployment.push(tech);
+              // ignore other technologies
+            });
+
+            const t = TRANSLATIONS[language];
+            const backendTitle = language === 'fr' ? 'Backend' : 'Backend';
+            const frontendTitle = language === 'fr' ? 'Frontend' : 'Frontend';
+            const deployTitle = language === 'fr' ? 'Déploiement' : 'Deployment';
+
+            return (
+              <>
+                {backend.length > 0 && (
+                  <div className="flex flex-col gap-1">
+                    <span className="text-xs font-bold uppercase tracking-wider">{backendTitle}</span>
+                    {backend.map((tech, idx) => (
+                      <span key={idx} className="px-2 py-1 bg-slate-100 dark:bg-white/10 text-[#151621] dark:text-gray-300 text-[10px] font-bold uppercase tracking-widest rounded-md">
+                        {tech}
+                      </span>
+                    ))}
+                  </div>
+                )}
+                {frontend.length > 0 && (
+                  <div className="flex flex-col gap-1 ml-4">
+                    <span className="text-xs font-bold uppercase tracking-wider">{frontendTitle}</span>
+                    {frontend.map((tech, idx) => (
+                      <span key={idx} className="px-2 py-1 bg-slate-100 dark:bg-white/10 text-[#151621] dark:text-gray-300 text-[10px] font-bold uppercase tracking-widest rounded-md">
+                        {tech}
+                      </span>
+                    ))}
+                  </div>
+                )}
+                {deployment.length > 0 && (
+                  <div className="flex flex-col gap-1 ml-4">
+                    <span className="text-xs font-bold uppercase tracking-wider">{deployTitle}</span>
+                    {deployment.map((tech, idx) => (
+                      <span key={idx} className="px-2 py-1 bg-slate-100 dark:bg-white/10 text-[#151621] dark:text-gray-300 text-[10px] font-bold uppercase tracking-widest rounded-md">
+                        {tech}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </>
+            );
+          })()}
+        </div>
       </div>
       <div className="px-6 pb-6 pt-0 flex items-center justify-between gap-3 mt-auto text-[11px] font-bold text-slate-400">
         <span className="flex items-center gap-1.5"><CalendarDays size={14} /> {project.lastActivity || (language === 'fr' ? 'Analysé' : 'Analyzed')}</span>
