@@ -256,7 +256,7 @@ const AllProjectsPage: React.FC<AllProjectsPageProps> = ({ language }) => {
                                             </div>
                                             {selectedTechs.length > 0 && <button onClick={() => setSelectedTechs([])} className="shrink-0 text-[10px] font-black uppercase tracking-widest text-[#b8b2b0] transition-colors hover:text-[#151621] dark:hover:text-white">{language === 'fr' ? 'Effacer' : 'Clear'}</button>}
                                         </div>
-                                        <div className="flex max-h-56 flex-wrap gap-2 overflow-y-auto pr-1 custom-scrollbar">
+                                        <div className="flex max-h-56 flex-wrap gap-2 overflow-y-auto p-1 custom-scrollbar">
                                             {featuredTechnologies.map((tech) => {
                                                 const isSelected = selectedTechs.includes(tech.value);
                                                 return (
