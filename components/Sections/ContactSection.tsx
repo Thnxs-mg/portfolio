@@ -10,8 +10,8 @@ interface ContactSectionProps {
 }
 
 const CV_LINKS: Record<Language, string> = {
-  fr: "https://raw.githubusercontent.com/Thnxs-mg/jason-chris-portfolio/main/assets/Cv_FRS.pdf",
-  en: "https://raw.githubusercontent.com/Thnxs-mg/jason-chris-portfolio/main/assets/Cv_ENG.pdf" // Assure-toi que ce fichier existe aussi
+  fr: `${import.meta.env.BASE_URL}Cv_FRS.pdf`,
+  en: `${import.meta.env.BASE_URL}Cv_ENG.pdf`,
 };
 
 const ContactItem: React.FC<{ icon: React.ReactNode; label: string; value: string; href?: string }> = ({ icon, label, value, href }) => (
