@@ -7,13 +7,13 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview",
+    "preview": "npm run build && wrangler dev",
     "analyze:projects": "node scripts/analyze-local-projects.mjs",
     "fetch:github-profile": "node scripts/fetch-github-profile.mjs",
     "fetch:github-data": "npm run fetch:github-profile && npm run fetch:github-contributions",
     "fetch:github-contributions": "node scripts/fetch-github-contributions.mjs",
     "predeploy": "npm run build",
-    "deploy": "gh-pages -d dist"
+    "deploy": "npm run build && wrangler deploy"
   },
   "dependencies": {
     "@types/react-scroll": "^1.8.10",
@@ -26,6 +26,7 @@
     "react-window": "^2.2.7"
   },
   "devDependencies": {
+    "@cloudflare/vite-plugin": "^1.47.0",
     "@types/node": "^22.14.0",
     "@vitejs/plugin-react": "^5.0.0",
     "autoprefixer": "^10.5.0",
@@ -33,6 +34,7 @@
     "postcss": "^8.5.14",
     "tailwindcss": "^3.4.17",
     "typescript": "~5.8.2",
-    "vite": "^6.2.0"
+    "vite": "^6.2.0",
+    "wrangler": "^4.114.0"
   }
 }
