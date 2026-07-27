@@ -6,7 +6,7 @@ export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, '.', '');
   return {
     // 👇 METS LE NOM EXACT DE TON REPO ICI (avec les slashs)
-    base: '/jason-chris-portfolio/', 
+    base: './', 
     
     server: {
       port: 3000,
