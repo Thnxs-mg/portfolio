@@ -375,7 +375,15 @@ const SoftViews: React.FC<{
 // ─── App ──────────────────────────────────────────────────────────────────────
 const App: React.FC = () => {
   const [language, setLanguage] = useState<Language>('fr');
-  const [isDark, setIsDark] = useState(false);
+  const [isDark, setIsDark] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    try {
+      const stored = window.localStorage.getItem('theme');
+      if (stored === 'dark') return true;
+      if (stored === 'light') return false;
+    } catch { /* noop */ }
+    return window.matchMedia('(prefers-color-scheme: dark)').matches;
+  });
 
   // ---- Lifted state for Projects page ----
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
@@ -390,6 +398,7 @@ const App: React.FC = () => {
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark', isDark);
+  try { window.localStorage.setItem('theme', isDark ? 'dark' : 'light'); } catch { /* noop */ }
   }, [isDark]);
 
   const toggleTheme = useCallback(() => setIsDark((d) => !d), []);
