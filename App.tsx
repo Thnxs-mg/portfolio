@@ -395,7 +395,7 @@ const App: React.FC = () => {
   const toggleTheme = useCallback(() => setIsDark((d) => !d), []);
 
   return (
-    <Router basename={import.meta.env.BASE_URL === '/' ? undefined : import.meta.env.BASE_URL.replace(/\/$/, '')}>
+    <Router basename={['/', './'].includes(import.meta.env.BASE_URL) ? undefined : import.meta.env.BASE_URL.replace(/\/$/, '')}>
       <div className="min-h-screen relative overflow-x-hidden selection:bg-[#b8b2b0]/30 selection:text-[#151621] transition-colors duration-300">
         <BlobTopRight />
         <BlobBottomLeft />
