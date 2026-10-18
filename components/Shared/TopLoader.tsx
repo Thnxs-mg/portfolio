@@ -26,10 +26,10 @@ export const TopLoader: React.FC = () => {
   return createPortal(
     <div className="fixed top-0 left-0 w-full h-[3px] z-[99999] pointer-events-none">
       <div 
-        className="h-full bg-gradient-to-r from-[#151621] to-[#b8b2b0] dark:from-white dark:to-[#b8b2b0] shadow-[0_0_10px_rgba(184,178,176,0.8)] transition-all duration-200 ease-out"
+        className="h-full bg-gradient-to-r from-[#151621] to-[#45b7aa] dark:from-white dark:to-[#45b7aa] shadow-[0_0_10px_rgba(69,183,170,0.8)] transition-all duration-200 ease-out"
         style={{ width: `${progress}%` }}
       >
-        <div className="absolute top-0 right-0 h-full w-[100px] shadow-[0_0_10px_#b8b2b0,0_0_5px_#b8b2b0] opacity-100 rotate-3 translate-x-1 translate-y-[-2px]"></div>
+        <div className="absolute top-0 right-0 h-full w-[100px] shadow-[0_0_10px_#45b7aa,0_0_5px_#45b7aa] opacity-100 rotate-3 translate-x-1 translate-y-[-2px]"></div>
       </div>
     </div>,
     document.body

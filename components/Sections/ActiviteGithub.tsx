@@ -38,7 +38,7 @@ const formatNumber = (value: number) => new Intl.NumberFormat('en', {
 
 const MetricItem: React.FC<{ icon: React.ReactNode; label: string; value: string | number }> = ({ icon, label, value }) => (
   <div className="rounded-2xl bg-slate-50 dark:bg-white/5 border border-slate-100 dark:border-white/10 p-4 min-w-0">
-    <div className="flex items-center gap-2 text-[#b8b2b0] mb-3">
+    <div className="flex items-center gap-2 text-[#45b7aa] mb-3">
       {React.cloneElement(icon as React.ReactElement<any>, { size: 16 })}
       <span className="text-[10px] font-black uppercase tracking-widest">{label}</span>
     </div>
@@ -144,7 +144,7 @@ const ActiviteGithub: React.FC<ActiviteGithubProps> = ({ language }) => {
                   <h3 className="text-lg sm:text-xl font-black text-[#151621] dark:text-white uppercase tracking-widest">
                     {language === 'fr' ? 'Contributions' : 'Contributions'}
                   </h3>
-                  <p className="text-[#BDC3C7] dark:text-[#b8b2b0] text-xs font-black uppercase tracking-wider">
+                  <p className="text-[#BDC3C7] dark:text-[#45b7aa] text-xs font-black uppercase tracking-wider">
                     {language === 'fr' ? 'Dernière année' : 'Last year'}
                   </p>
                 </div>
@@ -327,7 +327,7 @@ const ActiviteGithub: React.FC<ActiviteGithubProps> = ({ language }) => {
                             <span className="text-3xl font-black text-[#151621] dark:text-white">
                               {summary.languages[0]?.percentage}%
                             </span>
-                            <span className="text-[10px] font-black uppercase tracking-widest text-[#b8b2b0]">
+                            <span className="text-[10px] font-black uppercase tracking-widest text-[#45b7aa]">
                               {summary.languages[0]?.name}
                             </span>
                           </div>
@@ -345,7 +345,7 @@ const ActiviteGithub: React.FC<ActiviteGithubProps> = ({ language }) => {
                                   {item.name}
                                 </span>
                               </div>
-                              <span className="text-xs font-black text-[#b8b2b0]">
+                              <span className="text-xs font-black text-[#45b7aa]">
                                 {item.percentage}%
                               </span>
                             </div>

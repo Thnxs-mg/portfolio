@@ -80,14 +80,14 @@ const HobbiesSection: React.FC<HobbiesSectionProps> = ({ language }) => {
             return (
             <div
               key={group.title}
-              className="portfolio-reveal group rounded-3xl border border-[#BDC3C7]/30 bg-white/70 p-6 shadow-sm transition-all duration-300 hover:-translate-y-1.5 hover:border-[#b8b2b0] hover:shadow-xl hover:shadow-[#b8b2b0]/10 dark:border-white/10 dark:bg-white/[0.03] dark:hover:border-[#b8b2b0]"
+              className="portfolio-reveal group rounded-3xl border border-[#BDC3C7]/30 bg-white/70 p-6 shadow-sm transition-all duration-300 hover:-translate-y-1.5 hover:border-[#45b7aa] hover:shadow-xl hover:shadow-[#45b7aa]/10 dark:border-white/10 dark:bg-white/[0.03] dark:hover:border-[#45b7aa]"
             >
               <div className="mb-6 flex items-center justify-between">
-                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#151621] text-white dark:bg-white dark:text-[#151621] shadow-md group-hover:bg-[#b8b2b0] group-hover:text-white transition-colors">
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#151621] text-white dark:bg-white dark:text-[#151621] shadow-md group-hover:bg-[#45b7aa] group-hover:text-white transition-colors">
                   <Icon size={22} />
                 </div>
                 {SecondaryIcon && (
-                  <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#b8b2b0]/15 text-[#b8b2b0]">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#45b7aa]/15 text-[#45b7aa]">
                     <SecondaryIcon size={18} />
                   </div>
                 )}

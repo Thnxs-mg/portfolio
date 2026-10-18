@@ -31,9 +31,9 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, language }) => {
         pathname: `/realisations/${project.slug || project.title.toLowerCase().replace(/\s+/g, '-')}`,
         // you could pass state if needed
       }}
-      className="group cursor-pointer bg-white dark:bg-[#151621] rounded-[1.75rem] overflow-hidden shadow-[0_18px_50px_rgba(15,23,42,0.08)] hover:shadow-[0_30px_80px_rgba(184,178,176,0.20)] hover:-translate-y-2 transition-all duration-500 border border-slate-100 dark:border-white/5 flex flex-col h-full transform-gpu"
+      className="group cursor-pointer bg-white dark:bg-[#151621] rounded-[1.75rem] overflow-hidden shadow-[0_18px_50px_rgba(15,23,42,0.08)] hover:shadow-[0_30px_80px_rgba(69,183,170,0.20)] hover:-translate-y-2 transition-all duration-500 border border-slate-100 dark:border-white/5 flex flex-col h-full transform-gpu"
     >
-      <div className="relative h-48 w-full overflow-hidden bg-[radial-gradient(circle_at_top_left,rgba(184,178,176,0.24),transparent_38%),linear-gradient(135deg,#f8fafc,#eef2f7)] dark:bg-[radial-gradient(circle_at_top_left,rgba(184,178,176,0.16),transparent_42%),linear-gradient(135deg,#1e212b,#11131b)]">
+      <div className="relative h-48 w-full overflow-hidden bg-[radial-gradient(circle_at_top_left,rgba(69,183,170,0.24),transparent_38%),linear-gradient(135deg,#f8fafc,#eef2f7)] dark:bg-[radial-gradient(circle_at_top_left,rgba(69,183,170,0.16),transparent_42%),linear-gradient(135deg,#1e212b,#11131b)]">
         {project.imageUrl ? (
           <img src={project.imageUrl} alt={project.title} className="w-full h-full object-contain p-8 transition-transform duration-700 group-hover:scale-105" />
         ) : (
@@ -44,14 +44,14 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, language }) => {
         {project.status && <div className="absolute top-4 right-4 max-w-[48%] truncate rounded-full bg-white/90 px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-slate-600 shadow-sm backdrop-blur dark:bg-[#151621]/85 dark:text-slate-200">{project.status}</div>}
       </div>
       <div className="p-6 flex flex-col flex-grow">
-        {project.type && <div className="mb-3 flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-[#b8b2b0]"><Sparkles size={13} /> {project.type}</div>}
-        <h3 className="text-xl font-black text-[#151621] dark:text-white mb-3 leading-tight group-hover:text-[#b8b2b0] transition-colors">{project.title}</h3>
+        {project.type && <div className="mb-3 flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-[#45b7aa]"><Sparkles size={13} /> {project.type}</div>}
+        <h3 className="text-xl font-black text-[#151621] dark:text-white mb-3 leading-tight group-hover:text-[#45b7aa] transition-colors">{project.title}</h3>
         <p className="text-slate-600 dark:text-gray-400 text-sm leading-relaxed mb-5 line-clamp-3">{project.description}</p>
         {project.features && (
           <div className="mb-6 space-y-2">
             {project.features.slice(0, 2).map((feature) => (
               <div key={feature} className="flex items-start gap-2 text-xs text-slate-500 dark:text-gray-400">
-                <ShieldCheck size={14} className="mt-0.5 shrink-0 text-[#b8b2b0]" />
+                <ShieldCheck size={14} className="mt-0.5 shrink-0 text-[#45b7aa]" />
                 <span className="line-clamp-1">{feature}</span>
               </div>
             ))}
@@ -119,7 +119,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, language }) => {
       </div>
       <div className="px-6 pb-6 pt-0 flex items-center justify-between gap-3 mt-auto text-[11px] font-bold text-slate-400">
         <span className="flex items-center gap-1.5"><CalendarDays size={14} /> {project.lastActivity || (language === 'fr' ? 'Analysé' : 'Analyzed')}</span>
-        <span className="flex items-center gap-2">{project.githubUrl && <Github size={16} />}{project.demoUrl && <Rocket size={16} className="text-[#b8b2b0]" />}</span>
+        <span className="flex items-center gap-2">{project.githubUrl && <Github size={16} />}{project.demoUrl && <Rocket size={16} className="text-[#45b7aa]" />}</span>
       </div>
     </Link>
   );

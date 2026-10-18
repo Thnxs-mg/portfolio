@@ -1,88 +1,160 @@
-import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useLayoutEffect, useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { ArrowDown, ArrowRight, ArrowUpRight, ChevronLeft, ChevronRight } from 'lucide-react';
+import { gsap } from 'gsap';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { scroller } from 'react-scroll';
-import { PERSONAL_INFO, TRANSLATIONS } from '../../constants';
+import { PERSONAL_INFO, REALIZED_PROJECTS, TRANSLATIONS } from '../../constants';
 import { Language } from '../../types';
-import profilePicture from '../../assets/pro_picture.png';
+import profilePicture from '../../assets/pro_picture.webp';
+import { MotionWords } from '../Shared/StyledForms';
 import { cancelActiveScroll, runWithNativeSmoothDisabled } from '../../utils/scrollMotion';
-import { useRevealOnScroll } from '../../hooks/useRevealOnScroll';
 
-interface HeroSectionProps {
-  language: Language;
-}
+gsap.registerPlugin(ScrollTrigger);
 
-const HeroSection: React.FC<HeroSectionProps> = ({ language }) => {
+const HeroSection: React.FC<{ language: Language; isActive: boolean }> = ({ language, isActive }) => {
+  const [selected, setSelected] = useState(1);
+  const root = useRef<HTMLElement>(null);
+  const hasEntered = useRef(false);
+  const projects = REALIZED_PROJECTS[language];
+  const project = projects[selected];
   const t = TRANSLATIONS[language];
-  const navigate = useNavigate();
-  const revealRef = useRevealOnScroll<HTMLElement>();
 
-  const handleScrollToContact = (e: React.MouseEvent) => {
-    e.preventDefault();
+  useLayoutEffect(() => {
+    if (!isActive) return;
+    const media = gsap.matchMedia();
+    media.add('(prefers-reduced-motion: no-preference)', () => {
+      if (hasEntered.current) return;
+      hasEntered.current = true;
+      gsap.from('.cinema-intro-item', {
+        opacity: 0, y: 24, duration: 0.65, stagger: index => Math.min(index * 0.06, 0.24), ease: 'power3.out', clearProps: 'opacity,transform',
+      });
+      gsap.from('.cinema-name .cinema-word', {
+        yPercent: 100, opacity: 0, duration: 0.7, stagger: 0.08, ease: 'power3.out', clearProps: 'opacity,transform',
+      });
+    }, root);
+    media.add('(min-width: 1024px) and (prefers-reduced-motion: no-preference)', () => {
+      gsap.to('.cinema-stage-art', {
+        y: -35, ease: 'none',
+        scrollTrigger: { trigger: '.cinema-stage', start: 'top 40%', end: 'bottom top', scrub: 0.6 },
+      });
+    }, root);
+    media.add('(min-width: 1024px) and (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference)', () => {
+      const visual = root.current?.querySelector<HTMLElement>('.cinema-stage-visual');
+      const panel = root.current?.querySelector<HTMLElement>('.cinema-stage-panel');
+      if (!visual || !panel) return;
+      gsap.set(visual, { perspective: 1000 });
+      const rotateX = gsap.quickTo(panel, 'rotationX', { duration: 0.65, ease: 'power3.out' });
+      const rotateY = gsap.quickTo(panel, 'rotationY', { duration: 0.65, ease: 'power3.out' });
+      const move = (event: PointerEvent) => {
+        const rect = visual.getBoundingClientRect();
+        rotateX((0.5 - (event.clientY - rect.top) / rect.height) * 5);
+        rotateY(((event.clientX - rect.left) / rect.width - 0.5) * 7);
+      };
+      const reset = () => { rotateX(0); rotateY(0); };
+      visual.addEventListener('pointermove', move);
+      visual.addEventListener('pointerleave', reset);
+      return () => { visual.removeEventListener('pointermove', move); visual.removeEventListener('pointerleave', reset); };
+    }, root);
+    media.add('(min-width: 1024px) and (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference)', () => {
+      const button = root.current?.querySelector<HTMLElement>('.cinema-actions .cinema-button');
+      const content = button?.querySelector<HTMLElement>('.cinema-button-content');
+      if (!button || !content) return;
+      const x = gsap.quickTo(content, 'x', { duration: 0.25, ease: 'power3.out' });
+      const y = gsap.quickTo(content, 'y', { duration: 0.25, ease: 'power3.out' });
+      const move = (event: PointerEvent) => {
+        if (button.matches(':focus-visible')) return;
+        const rect = button.getBoundingClientRect();
+        x(((event.clientX - rect.left) / rect.width - 0.5) * 6);
+        y(((event.clientY - rect.top) / rect.height - 0.5) * 6);
+      };
+      const reset = () => { x(0); y(0); };
+      button.addEventListener('pointermove', move);
+      button.addEventListener('pointerleave', reset);
+      button.addEventListener('focus', reset);
+      return () => {
+        button.removeEventListener('pointermove', move);
+        button.removeEventListener('pointerleave', reset);
+        button.removeEventListener('focus', reset);
+      };
+    }, root);
+    const refresh = window.setTimeout(() => ScrollTrigger.refresh(), 350);
+    return () => { window.clearTimeout(refresh); media.revert(); };
+  }, [isActive]);
+
+  const goToContact = (event: React.MouseEvent) => {
+    event.preventDefault();
     cancelActiveScroll();
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     runWithNativeSmoothDisabled(() => {
-      scroller.scrollTo('contact', { smooth: 'easeInOutCubic', duration: 760, offset: -80 });
-    }, 880);
+      scroller.scrollTo('contact', { smooth: reduced ? false : 'easeInOutCubic', duration: reduced ? 0 : 760, offset: -90 });
+    }, reduced ? 0 : 880);
   };
 
-  const handleGoToProjects = (e: React.MouseEvent) => {
-    e.preventDefault();
-    navigate('/realisations');
-  };
+  const changeProject = (step: number) => setSelected(current => (current + step + projects.length) % projects.length);
 
   return (
-    <section ref={revealRef} id="home" className="relative pt-24 sm:pt-36 pb-12 sm:pb-20 px-4 sm:px-6 lg:px-12 overflow-hidden">
-      <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center gap-8 sm:gap-12">
-        {/* Photo Container */}
-        <div className="portfolio-reveal relative group">
-          <div className="absolute -inset-2 sm:-inset-4 bg-[#b8b2b0] rounded-full opacity-20 -z-10 animate-pulse"></div>
-          <div className="w-48 h-48 sm:w-60 h-60 md:w-72 md:h-72 rounded-full border-4 sm:border-8 border-[#151621] dark:border-[#b8b2b0] overflow-hidden shadow-2xl relative z-10 transition-transform duration-500 group-hover:scale-105">
-            <img
-              src={profilePicture}
-              alt={PERSONAL_INFO.fullName}
-              className="w-full h-full object-cover grayscale-[10%]"
-            />
-          </div>
-          {/* Accent Badge */}
-          <div className="absolute -bottom-1 -right-1 sm:-bottom-2 sm:-right-2 w-10 h-10 sm:w-16 sm:h-16 bg-[#b8b2b0] rounded-full border-4 border-white dark:border-[#12141d] z-20 flex items-center justify-center text-white font-black text-xl sm:text-2xl">
-          </div>
+    <section id="home" ref={root} className="cinema-hero">
+      <div className="cinema-intro">
+        <div className="cinema-portrait cinema-intro-item">
+          <img src={profilePicture} alt={PERSONAL_INFO.fullName} width="160" height="160" fetchPriority="high" />
+          <span className="cinema-portrait-index" aria-hidden="true">JC — 01</span>
         </div>
-
-        {/* Text Content */}
-        <div className="portfolio-reveal text-center md:text-left relative z-10 max-w-2xl mt-4 md:mt-10 lg:mt-14">
-          <h1 className="text-3xl sm:text-5xl lg:text-7xl font-black text-[#151621] dark:text-white leading-[1.1] mb-4 tracking-tighter">
-            {PERSONAL_INFO.fullName}
-          </h1>
-          <div className="h-1.5 sm:h-2 w-20 sm:w-32 bg-[#b8b2b0] mb-6 sm:mb-8 mx-auto md:mx-0 rounded-full"></div>
-          <p className="text-lg sm:text-2xl lg:text-3xl font-extrabold text-[#151621]/80 dark:text-gray-400 uppercase tracking-widest leading-snug">
-            {PERSONAL_INFO.title[language]}
-          </p>
-          <p className="mt-4 text-sm sm:text-base lg:text-lg text-[#151621]/70 dark:text-gray-300 leading-relaxed max-w-xl mx-auto md:mx-0">
-            {PERSONAL_INFO.tagline[language]}
-          </p>
-          
-          <div className="mt-8 sm:mt-10 flex flex-col sm:flex-row justify-center md:justify-start gap-4">
-            
-            {/* Bouton 1 : Voir Projets (Utilise useNavigate) */}
-            <a
-              href="/realisations"
-              onClick={handleGoToProjects}
-              className="h-10 sm:h-12 px-8 bg-[#151621] dark:bg-[#b8b2b0] text-white rounded-full flex items-center justify-center font-bold text-xs sm:text-sm uppercase tracking-widest shadow-lg hover:scale-105 active:scale-95 transition-all cursor-pointer"
-            >
-              {t.hero.viewProjects}
-            </a>
-
-            {/* Bouton 2 : Contact (Utilise react-scroll) */}
-            <a
-              href="#contact"
-              onClick={handleScrollToContact}
-              className="h-10 sm:h-12 px-8 border-2 border-[#151621] dark:border-white text-[#151621] dark:text-white rounded-full flex items-center justify-center font-bold text-xs sm:text-sm uppercase tracking-widest hover:bg-[#151621] hover:text-white dark:hover:bg-white dark:hover:text-[#151621] transition-all transform hover:-translate-y-1 cursor-pointer"
-            >
-              {t.hero.contactMe}
-            </a>
-            
+        <div className="cinema-identity">
+          <p className="cinema-eyebrow cinema-intro-item">RANDRIAMAHERY <span>— {language === 'fr' ? 'Portfolio personnel' : 'Personal portfolio'}</span></p>
+          <h1 className="cinema-name"><MotionWords>JASON CHRIS</MotionWords><span className="sr-only"> — Randriamahery</span></h1>
+          <div className="cinema-intro-bottom cinema-intro-item">
+            <div>
+              <p className="cinema-role">{language === 'fr' ? 'Développeur full-stack' : 'Full-stack developer'}</p>
+              <p className="cinema-specialty">Java / Django <span>— Junior</span></p>
+              <div className="cinema-actions">
+                <Link to="/realisations" className="cinema-button"><span className="cinema-button-content">{t.hero.viewProjects}<ArrowUpRight size={17} /></span></Link>
+                <a href="#contact" onClick={goToContact} className="cinema-text-link">{t.hero.contactMe}<ArrowRight size={16} /></a>
+              </div>
+            </div>
+            <p className="cinema-tagline">{PERSONAL_INFO.tagline[language]}</p>
           </div>
         </div>
       </div>
+
+      <div className="cinema-gallery-label cinema-intro-item">
+        <span className="cinema-eyebrow">{language === 'fr' ? 'Une sélection de réalisations' : 'Selected work'}</span>
+        <span className="cinema-eyebrow">01 — 03 <ArrowDown size={13} aria-hidden="true" /></span>
+      </div>
+      <div className="cinema-stage cinema-intro-item" aria-roledescription={language === 'fr' ? 'Galerie de projets' : 'Project gallery'}>
+        <div className="cinema-stage-info" key={`info-${project.slug}`}>
+          <span className="cinema-eyebrow cinema-scene-index">{String(selected + 1).padStart(2, '0')} <span className="cinema-rule" /></span>
+          <h2>{project.title}</h2>
+          <p className="cinema-eyebrow cinema-stage-type">{project.type}</p>
+          <p className="cinema-stage-stack">{project.technologies.join(' · ')}</p>
+          <p className="cinema-stage-description">{project.description}</p>
+          <Link to={`/realisations?project=${project.slug}`} className="cinema-text-link">
+            <span className="cinema-round-arrow"><ArrowUpRight size={18} /></span>
+            {language === 'fr' ? 'Découvrir le projet' : 'Explore project'}
+          </Link>
+        </div>
+        <Link to={`/realisations?project=${project.slug}`} className="cinema-stage-visual" aria-label={`${language === 'fr' ? 'Découvrir' : 'Explore'} ${project.title}`}>
+          <div className="cinema-stage-panel">
+            <span className="cinema-art-caption">{language === 'fr' ? 'Identité du projet' : 'Project identity'} <ArrowUpRight size={15} /></span>
+            <div className="cinema-stage-art">
+              <img key={project.slug} src={project.imageUrl} alt={project.title} width="480" height="480" />
+            </div>
+            <span className="cinema-art-bottom">{project.status}<span>{project.lastActivity}</span></span>
+          </div>
+          <span className="cinema-stage-number" aria-hidden="true">{String(selected + 1).padStart(2, '0')}</span>
+        </Link>
+      </div>
+      <p className="sr-only" role="status">{project.title}</p>
+      <div className="cinema-filmstrip cinema-intro-item" role="group" aria-label={language === 'fr' ? 'Choisir un projet' : 'Choose a project'}>
+        <button className="cinema-arrow" onClick={() => changeProject(-1)} aria-label={language === 'fr' ? 'Projet précédent' : 'Previous project'}><ChevronLeft size={20} /></button>
+        {projects.map((item, index) => (
+          <button key={item.slug} className={`cinema-film-item ${selected === index ? 'is-selected' : ''}`} aria-pressed={selected === index} onClick={() => setSelected(index)}>
+            <span>{String(index + 1).padStart(2, '0')}</span><span>{item.title}</span><ArrowUpRight size={16} />
+          </button>
+        ))}
+        <button className="cinema-arrow" onClick={() => changeProject(1)} aria-label={language === 'fr' ? 'Projet suivant' : 'Next project'}><ChevronRight size={20} /></button>
+      </div>
+      <div className="cinema-gallery-footer"><span>{language === 'fr' ? 'Du besoin métier à l’interface.' : 'From business needs to interfaces.'}</span><a href="#about">{language === 'fr' ? 'La suite du parcours' : 'Continue exploring'} <ArrowDown size={14} /></a></div>
     </section>
   );
 };

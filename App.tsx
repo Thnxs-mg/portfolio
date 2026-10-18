@@ -1,8 +1,10 @@
+import { flushSync } from 'react-dom';
+import { useReducedMotion } from 'framer-motion';
 import React, { useState, useEffect, useLayoutEffect, useRef, useCallback, Suspense, memo } from 'react';
-import { BrowserRouter as Router, useLocation, useNavigate, Link } from 'react-router-dom';
+import { BrowserRouter as Router, useLocation, Link } from 'react-router-dom';
 
 import Navbar from './components/Layout/Navbar';
-import { BlobTopRight, BlobBottomLeft } from './components/Shared/StyledForms';
+import IntroScreen, { shouldShowIntro } from './components/Shared/IntroScreen';
 import { jumpToElementWithoutAnimation, jumpToTopWithoutAnimation, consumePendingScrollTarget } from './utils/scrollMotion';
 import { Language } from './types';
 import { TopLoader } from './components/Shared/TopLoader';
@@ -32,7 +34,7 @@ if (typeof window !== 'undefined') {
   warmChunk('projects', importProjectsPage);
   warmChunk('home', importHomePage);
 }
-const prefetchProjects = () => importProjectsPage();
+const prefetchProjects = () => warmChunk('projects', importProjectsPage);
 
 // ─── NotFoundPage ─────────────────────────────────────────────────────────────
 const NotFoundPage: React.FC<{ language: Language }> = ({ language }) => (
@@ -51,7 +53,7 @@ const NotFoundPage: React.FC<{ language: Language }> = ({ language }) => (
       </p>
       <Link
         to="/"
-        className="inline-flex items-center justify-center px-8 py-4 rounded-full bg-[#151621] dark:bg-white text-white dark:text-[#151621] hover:bg-[#b8b2b0] dark:hover:bg-[#b8b2b0] dark:hover:text-white transition-all duration-300 font-black uppercase tracking-widest text-sm shadow-xl"
+        className="inline-flex items-center justify-center px-8 py-4 rounded-full bg-[#151621] dark:bg-white text-white dark:text-[#151621] hover:bg-[var(--cinema-accent)] hover:text-[var(--cinema-on-accent)] dark:hover:bg-[var(--cinema-accent)] dark:hover:text-[var(--cinema-on-accent)] transition-all duration-300 font-black uppercase tracking-widest text-sm shadow-xl"
       >
         {language === 'fr' ? "Retourner à la page d'accueil" : 'Back to home'}
       </Link>
@@ -59,321 +61,118 @@ const NotFoundPage: React.FC<{ language: Language }> = ({ language }) => (
   </section>
 );
 
-// ─── revealSoftViewElements ───────────────────────────────────────────────────
-const revealSoftViewElements = (view: HTMLElement | null) => {
-  if (!view) return;
-  view.classList.add('instant-reveal');
-  const els = view.getElementsByClassName('portfolio-reveal');
-  for (let i = 0; i < els.length; i++) {
-    const el = els[i] as HTMLElement;
-    el.classList.add('is-visible', 'has-revealed');
-    el.classList.remove('portfolio-replay');
-    el.dataset.revealAway = 'false';
-  }
-
-  requestAnimationFrame(() => {
-    requestAnimationFrame(() => {
-      view.classList.remove('invisible');
-    });
-  });
-};
-
-// ─── SoftViews ────────────────────────────────────────────────────────────────
-const TRANSITION_MS = 200;
-
-type ViewState = 'hidden' | 'entering' | 'visible' | 'leaving';
-
-function useViewTransition(initialState: ViewState) {
-  const [state, setStateRaw] = useState<ViewState>(initialState);
-  const timersRef = useRef<number[]>([]);
-
-  const clearTimers = useCallback(() => {
-    timersRef.current.forEach(window.clearTimeout);
-    timersRef.current = [];
-  }, []);
-
-  const schedule = useCallback((fn: () => void, delay: number) => {
-    const id = window.setTimeout(fn, delay);
-    timersRef.current.push(id);
-  }, []);
-
-  useEffect(() => () => {
-    clearTimers();
-  }, [clearTimers]);
-
-  return { state, setStateRaw, clearTimers, schedule };
-}
-
-function getViewStyle(state: ViewState): React.CSSProperties {
-  switch (state) {
-    case 'hidden':
-      return { display: 'none' };
-    case 'entering':
-      return {
-        opacity: 0,
-        filter: 'blur(1px)',
-        transform: 'translate3d(0, 6px, 0) scale(0.98)',
-        pointerEvents: 'none',
-        position: 'relative',
-        willChange: 'transform, opacity, filter',
-        zIndex: 2,
-        transition: `opacity ${TRANSITION_MS}ms cubic-bezier(0.25,0.1,0.25,1),
-                     transform ${TRANSITION_MS}ms cubic-bezier(0.25,0.1,0.25,1),
-                     filter ${TRANSITION_MS}ms cubic-bezier(0.25,0.1,0.25,1)`,
-      };
-    case 'leaving':
-      return {
-        opacity: 0,
-        filter: 'blur(1px)',
-        transform: 'translate3d(0, -6px, 0) scale(0.98)',
-        pointerEvents: 'none',
-        position: 'absolute',
-        inset: 0,
-        willChange: 'transform, opacity, filter',
-        transition: `opacity ${TRANSITION_MS}ms cubic-bezier(0.25,0.1,0.25,1),
-                     transform ${TRANSITION_MS}ms cubic-bezier(0.25,0.1,0.25,1),
-                     filter ${TRANSITION_MS}ms cubic-bezier(0.25,0.1,0.25,1)`,
-        zIndex: 1,
-      };
-    case 'visible':
-      return {
-        opacity: 1,
-        filter: 'blur(0)',
-        transform: 'translate3d(0, 0, 0) scale(1)',
-        pointerEvents: 'auto',
-        position: 'relative',
-        willChange: 'transform, opacity, filter',
-        zIndex: 2,
-        transition: `opacity ${TRANSITION_MS}ms cubic-bezier(0.25, 0.46, 0.45, 0.94),
-                     transform ${TRANSITION_MS}ms cubic-bezier(0.25, 0.46, 0.45, 0.94),
-                     filter ${TRANSITION_MS}ms cubic-bezier(0.25, 0.46, 0.45, 0.94)`,
-      };
-    default:
-      return {};
-  }
-}
-
-const SoftViews: React.FC<{
-  language: Language;
-  selectedProject: Project | null;
-  setSelectedProject: (p: Project | null) => void;
-  selectedCategories: string[];
-  setSelectedCategories: (cats: string[]) => void;
-  selectedTechs: string[];
-  setSelectedTechs: (techs: string[]) => void;
-}> = ({
-  language,
-  selectedProject,
-  setSelectedProject,
-  selectedCategories,
-  setSelectedCategories,
-  selectedTechs,
-  setSelectedTechs,
-}) => {
-  const location = useLocation();
-  const prevPathRef = useRef(location.pathname);
+// ─── Retained views, one visible page and one cancellable transition ────────────
+const SoftViews: React.FC<{ language: Language; pageRef: React.RefObject<HTMLDivElement | null> }> = ({ language, pageRef }) => {
+  const { pathname } = useLocation();
+  const reduced = useReducedMotion();
+  const [displayedPath, setDisplayedPath] = useState(pathname);
+  const displayedPathRef = useRef(pathname);
+  const requestedPath = useRef(pathname);
+  const sectionTarget = useRef<string | null>(null);
   const [isDownloading, setIsDownloading] = useState(false);
-  const homeViewRef = useRef<HTMLDivElement | null>(null);
-  const projectsViewRef = useRef<HTMLDivElement | null>(null);
-  const hideTimerRef = useRef<number | null>(null);
-  const loaderTimerRef = useRef<number | null>(null);
-
-  const isHome = location.pathname === '/';
-  const isProjects = location.pathname === '/realisations';
-  const isNotFound = !isHome && !isProjects;
-
-  const home = useViewTransition(isHome ? 'visible' : 'hidden');
-  const projects = useViewTransition(isProjects ? 'visible' : 'hidden');
 
   useLayoutEffect(() => {
-    const path = location.pathname;
-    const prev = prevPathRef.current;
+    const host = pageRef.current;
+    if (!host) return;
+    if (requestedPath.current !== pathname) {
+      requestedPath.current = pathname;
+      sectionTarget.current = consumePendingScrollTarget();
+    }
+    setIsDownloading(false);
+    if (displayedPathRef.current === pathname && !host.style.opacity && !sectionTarget.current) return;
 
-    // CRITICAL: Guard clause - only run on actual pathname changes
-    if (prev === path) return;
+    let cancelled = false;
+    let animation: Animation | null = null;
+    let loaderTimer: number | undefined;
+    const easing = getComputedStyle(host).getPropertyValue('--cinema-ease').trim();
+    host.dataset.transitioning = 'leaving';
+    host.setAttribute('aria-busy', 'true');
 
-    prevPathRef.current = path;
-
-    const targetSection = consumePendingScrollTarget();
-
-    const applyScroll = () => {
-      if (targetSection) {
-        jumpToElementWithoutAnimation(targetSection, -80);
-      } else {
-        jumpToTopWithoutAnimation();
-      }
+    const play = async (frames: Keyframe[], duration: number) => {
+      if (reduced || !host.animate) return;
+      animation = host.animate(frames, { duration, easing, fill: 'forwards' });
+      try { await animation.finished; } catch { /* A newer navigation can cancel this one. */ }
     };
-
-    // -------------------------------------------------
-    // CASE 1 – Real route change → start transition
-    // -------------------------------------------------
-    const startTransition = () => {
-      // ----- Home → Projects -----
-      if (prev === '/' && path === '/realisations') {
-        projects.setStateRaw('entering');
-        home.setStateRaw('leaving');
-
-        requestAnimationFrame(() => {
-          projects.setStateRaw('visible');
-          revealSoftViewElements(projectsViewRef.current);
-
-          // Wait for React to flush updates and paint before scrolling
-          requestAnimationFrame(() => {
-            // Allow paint to finish, then schedule scroll after paint
-            setTimeout(() => {
-              applyScroll();
-            }, 0);
-          });
-
-          if (hideTimerRef.current) {
-            window.clearTimeout(hideTimerRef.current);
-          }
-          hideTimerRef.current = window.setTimeout(() => {
-            home.setStateRaw('hidden');
-          }, TRANSITION_MS);
-        });
-      }
-      // ----- Projects → Home -----
-      else if (prev === '/realisations' && path === '/') {
-        home.setStateRaw('entering');
-        projects.setStateRaw('leaving');
-
-        requestAnimationFrame(() => {
-          home.setStateRaw('visible');
-          revealSoftViewElements(homeViewRef.current);
-
-          // Wait for React to flush updates and paint before scrolling
-          requestAnimationFrame(() => {
-            // Allow paint to finish, then schedule scroll after paint
-            setTimeout(() => {
-              applyScroll();
-            }, 0);
-          });
-
-          if (hideTimerRef.current) {
-            window.clearTimeout(hideTimerRef.current);
-          }
-          hideTimerRef.current = window.setTimeout(() => {
-            projects.setStateRaw('hidden');
-          }, TRANSITION_MS);
-        });
-      }
-      // ----- Fallback: direct access / refresh / 404 -----
-      else {
-        applyScroll();
-        if (isHome) {
-          home.setStateRaw('visible');
-          projects.setStateRaw('hidden');
-        } else if (isProjects) {
-          projects.setStateRaw('visible');
-          home.setStateRaw('hidden');
+    const changePage = async () => {
+      let swapped = false;
+      if (displayedPathRef.current !== pathname || sectionTarget.current) {
+        const load = pathname === '/' ? warmChunk('home', importHomePage)
+          : pathname === '/realisations' ? warmChunk('projects', importProjectsPage) : Promise.resolve();
+        loaderTimer = window.setTimeout(() => { if (!cancelled) setIsDownloading(true); }, 120);
+        await load;
+        if (cancelled) return;
+        clearTimeout(loaderTimer);
+        setIsDownloading(false);
+        const current = getComputedStyle(host);
+        await play([{ opacity: current.opacity, transform: current.transform }, { opacity: 0, transform: 'translateY(-8px)' }], 120);
+        if (cancelled) return;
+        // Swap and position the destination while the entire page, including its footer, is covered.
+        host.style.opacity = '0';
+        animation?.cancel();
+        animation = null;
+        flushSync(() => setDisplayedPath(pathname));
+        displayedPathRef.current = pathname;
+        swapped = true;
+        if (pathname === '/' && sectionTarget.current) {
+          jumpToElementWithoutAnimation(sectionTarget.current, -80);
         } else {
-          home.setStateRaw('hidden');
-          projects.setStateRaw('hidden');
+          jumpToTopWithoutAnimation();
         }
+        sectionTarget.current = null;
+        if (host.contains(document.activeElement)) document.getElementById('main-content')?.focus({ preventScroll: true });
       }
+      if (cancelled) return;
+      host.dataset.transitioning = 'entering';
+      const current = getComputedStyle(host);
+      await play([{ opacity: current.opacity, transform: swapped ? 'translateY(12px)' : current.transform }, { opacity: 1, transform: 'none' }], 260);
+      if (cancelled) return;
+      animation?.cancel();
+      animation = null;
+      host.style.removeProperty('opacity');
+      host.style.removeProperty('transform');
+      delete host.dataset.transitioning;
+      host.removeAttribute('aria-busy');
     };
-
-    // ----- Chunk loading logic -----
-    const isHomeToProjects = prev === '/' && path === '/realisations';
-    const isProjectsToHome = prev === '/realisations' && path === '/';
-    let chunkPromise: Promise<unknown> | null = null;
-
-    if (isHomeToProjects) {
-      chunkPromise = warmChunk('projects', importProjectsPage);
-    } else if (isProjectsToHome) {
-      chunkPromise = warmChunk('home', importHomePage);
-    }
-
-    if (chunkPromise) {
-      let resolved = false;
-      chunkPromise.then(() => {
-        const stillHomeToProjects = prev === '/' && path === '/realisations';
-        const stillProjectsToHome = prev === '/realisations' && path === '/';
-        if ((isHomeToProjects && stillHomeToProjects) || (isProjectsToHome && stillProjectsToHome)) {
-          resolved = true;
-          setIsDownloading(false);
-          startTransition();
-        }
-      });
-
-      if (loaderTimerRef.current) {
-        window.clearTimeout(loaderTimerRef.current);
-      }
-      loaderTimerRef.current = window.setTimeout(() => {
-        if (!resolved) {
-          setIsDownloading(true);
-        }
-      }, 32);
-
-      chunkPromise.then(() => {
-        if (loaderTimerRef.current) {
-          window.clearTimeout(loaderTimerRef.current);
-          loaderTimerRef.current = null;
-        }
-      });
-    } else {
-      startTransition();
-    }
-
-    // Cleanup function
+    void changePage();
     return () => {
-      if (hideTimerRef.current) {
-        window.clearTimeout(hideTimerRef.current);
-        hideTimerRef.current = null;
+      cancelled = true;
+      clearTimeout(loaderTimer);
+      if (animation) {
+        const current = getComputedStyle(host);
+        host.style.opacity = current.opacity;
+        host.style.transform = current.transform;
+        animation.cancel();
       }
-      if (loaderTimerRef.current) {
-        window.clearTimeout(loaderTimerRef.current);
-        loaderTimerRef.current = null;
-      }
+      delete host.dataset.transitioning;
+      host.removeAttribute('aria-busy');
     };
-  }, [location]);
+  }, [pathname, reduced, pageRef]);
 
+  const homeVisible = displayedPath === '/';
+  const projectsVisible = displayedPath === '/realisations';
   return (
-    <div style={{ position: 'relative' }}>
+    <div data-displayed-page={displayedPath}>
       {isDownloading && <TopLoader />}
-
-      {/* Container for view transitions */}
-      <div style={{ position: 'relative' }}>
-        {/* ── Home View ── */}
-        <div
-          ref={homeViewRef}
-          style={getViewStyle(home.state)}
-          aria-hidden={home.state === 'hidden'}
-        >
-          <Suspense fallback={null}>
-            <MemoizedHomePage language={language} />
-          </Suspense>
-        </div>
-
-        {/* ── Projects View ── */}
-        <div
-          ref={projectsViewRef}
-          style={getViewStyle(projects.state)}
-          aria-hidden={projects.state === 'hidden'}
-        >
-          <Suspense fallback={null}>
-            <MemoizedAllProjectsPage
-              language={language}
-              selectedProject={selectedProject}
-              setSelectedProject={setSelectedProject}
-              selectedCategories={selectedCategories}
-              setSelectedCategories={setSelectedCategories}
-              selectedTechs={selectedTechs}
-              setSelectedTechs={setSelectedTechs}
-            />
-          </Suspense>
-        </div>
+      <div style={{ display: homeVisible ? undefined : 'none' }} aria-hidden={!homeVisible} inert={!homeVisible}>
+        <Suspense fallback={homeVisible ? <TopLoader /> : null}>
+          <MemoizedHomePage language={language} isActive={homeVisible} />
+        </Suspense>
       </div>
-
-      {/* ── 404 Page ── */}
-      {isNotFound && <NotFoundPage language={language} />}
+      <div style={{ display: projectsVisible ? undefined : 'none' }} aria-hidden={!projectsVisible} inert={!projectsVisible}>
+        <Suspense fallback={projectsVisible ? <TopLoader /> : null}>
+          <MemoizedAllProjectsPage language={language} isActive={projectsVisible} />
+        </Suspense>
+      </div>
+      {!homeVisible && !projectsVisible && <NotFoundPage language={language} />}
     </div>
   );
 };
 
 // ─── App ──────────────────────────────────────────────────────────────────────
 const App: React.FC = () => {
+  const pageRef = useRef<HTMLDivElement>(null);
+  const [showIntro, setShowIntro] = useState(shouldShowIntro);
+  const finishIntro = useCallback(() => setShowIntro(false), []);
   const [language, setLanguage] = useState<Language>('fr');
   const [isDark, setIsDark] = useState(() => {
     if (typeof window === 'undefined') return false;
@@ -382,13 +181,8 @@ const App: React.FC = () => {
       if (stored === 'dark') return true;
       if (stored === 'light') return false;
     } catch { /* noop */ }
-    return window.matchMedia('(prefers-color-scheme: dark)').matches;
+    return true;
   });
-
-  // ---- Lifted state for Projects page ----
-  const [selectedProject, setSelectedProject] = useState<Project | null>(null);
-  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
-  const [selectedTechs, setSelectedTechs] = useState<string[]>([]);
 
   useEffect(() => {
     if ('scrollRestoration' in window.history) {
@@ -401,15 +195,17 @@ const App: React.FC = () => {
   try { window.localStorage.setItem('theme', isDark ? 'dark' : 'light'); } catch { /* noop */ }
   }, [isDark]);
 
+  useEffect(() => { document.documentElement.lang = language; }, [language]);
+
   const toggleTheme = useCallback(() => setIsDark((d) => !d), []);
+
+  if (showIntro) return <IntroScreen onComplete={finishIntro} />;
 
   return (
     <Router basename={['/', './'].includes(import.meta.env.BASE_URL) ? undefined : import.meta.env.BASE_URL.replace(/\/$/, '')}>
-      <div className="min-h-screen relative overflow-x-hidden selection:bg-[#b8b2b0]/30 selection:text-[#151621] transition-colors duration-300">
-        <BlobTopRight />
-        <BlobBottomLeft />
+      <div className="cinema min-h-screen relative selection:bg-[#45b7aa] selection:text-[#151621] transition-colors duration-300">
+        <a className="cinema-skip-link" href="#main-content">{language === 'fr' ? 'Aller au contenu' : 'Skip to content'}</a>
 
-        {/* Add logging to Navbar clicks (we can't modify Navbar directly here, so we log location changes via useEffect) */}
         <Navbar
           language={language}
           setLanguage={setLanguage}
@@ -418,26 +214,23 @@ const App: React.FC = () => {
           prefetchProjects={prefetchProjects}
         />
 
-        <main className="container mx-auto max-w-7xl">
+        <div ref={pageRef} className="cinema-page">
+        <main id="main-content" tabIndex={-1} className="cinema-content">
           <SoftViews
             language={language}
-            selectedProject={selectedProject}
-            setSelectedProject={setSelectedProject}
-            selectedCategories={selectedCategories}
-            setSelectedCategories={setSelectedCategories}
-            selectedTechs={selectedTechs}
-            setSelectedTechs={setSelectedTechs}
+            pageRef={pageRef}
           />
         </main>
 
-        <footer className="bg-[#151621] dark:bg-black text-[#BDC3C7] py-20 text-center transition-colors border-t border-white/5 mt-12">
-          <div className="max-w-5xl mx-auto px-6">
-            <p className="font-black text-white text-3xl mb-4 tracking-tighter">RANDRIAMAHERY JASON CHRIS</p>
-            <p className="text-sm uppercase tracking-[0.3em] font-bold text-[#b8b2b0]">
+        <footer className="cinema-footer">
+          <div className="cinema-footer-inner">
+            <p className="cinema-footer-name">RANDRIAMAHERY JASON CHRIS</p>
+            <p className="cinema-eyebrow">
               {language === 'fr' ? 'DÉVELOPPEUR FULL-STACK JAVA / DJANGO' : 'FULL-STACK JAVA / DJANGO DEVELOPER'}
             </p>
           </div>
         </footer>
+        </div>
       </div>
     </Router>
   );

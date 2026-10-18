@@ -12,7 +12,7 @@ export default {
     extend: {
       colors: {
         cvDark: '#151621',
-        cvAccent: '#b8b2b0',
+        cvAccent: '#45b7aa',
         cvRed: '#E74C3C',
         cvGrey: '#BDC3C7',
       },

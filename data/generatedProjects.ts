@@ -1,10 +1,10 @@
 import { Project } from '../types';
 
 import motoLandIcon from '../assets/project_icon/moto-land.png';
-import blueHotelIcon from '../assets/project_icon/blue-hotel.png';
-import auroraManagementIcon from '../assets/project_icon/aurora-management.png';
+import blueHotelIcon from '../assets/project_icon/blue-hotel.webp';
+import auroraManagementIcon from '../assets/project_icon/aurora-management.webp';
 import keraDesignIcon from '../assets/project_icon/kera-design.svg';
-import spatIcon from '../assets/project_icon/spat.png';
+import spatIcon from '../assets/project_icon/spat.webp';
 import portfolioIcon from '../assets/project_icon/portfolio.svg';
 import valentinsDayIcon from '../assets/project_icon/valentins-day.svg';
 
@@ -41,6 +41,7 @@ export const GENERATED_PROJECTS: Record<'fr' | 'en', Project[]> = {
       repositoryState: 'Aucun changement local détecté',
       evidence: ['README deployment ready', 'apps Django métier', 'package.json frontend', 'logos source'],
       imageUrl: auroraManagementIcon,
+      demoUrl: 'https://aurora-management-demo.rd-jasonchris.workers.dev/',
     },
     {
       slug: 'spat',
@@ -91,6 +92,7 @@ export const GENERATED_PROJECTS: Record<'fr' | 'en', Project[]> = {
       repositoryState: 'No local changes detected',
       evidence: ['Deployment-ready README', 'Django business apps', 'frontend package.json', 'source logos'],
       imageUrl: auroraManagementIcon,
+      demoUrl: 'https://aurora-management-demo.rd-jasonchris.workers.dev/',
     },
     {
       slug: 'spat',

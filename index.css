@@ -38,51 +38,10 @@ body {
   animation: float 10s ease-in-out infinite;
 }
 
-.portfolio-reveal {
-  opacity: 0;
-  transform: translateY(18px);
-  transition:
-    opacity 700ms cubic-bezier(0.22, 1, 0.36, 1),
-    transform 700ms cubic-bezier(0.22, 1, 0.36, 1);
-  transition-delay: var(--reveal-delay, 0ms);
-  will-change: opacity, transform;
-}
-
-.portfolio-reveal.is-visible {
-  opacity: 1;
-  transform: translateY(0);
-}
-
-.portfolio-reveal.has-revealed {
-  opacity: 1;
-  transform: translateY(0);
-}
-
-.portfolio-reveal.portfolio-replay {
-  animation: portfolio-reveal-replay 520ms cubic-bezier(0.22, 1, 0.36, 1) both;
-}
-
-.instant-reveal .portfolio-reveal {
-  transition: none !important;
-  animation: none !important;
-}
-
-@keyframes portfolio-reveal-replay {
-  0% {
-    opacity: 0.98;
-    transform: translateY(8px);
-  }
-
-  100% {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
 .premium-surface {
   background:
     linear-gradient(135deg, rgba(255, 255, 255, 0.88), rgba(255, 255, 255, 0.68)),
-    radial-gradient(circle at top left, rgba(184, 178, 176, 0.18), transparent 34%);
+    radial-gradient(circle at top left, rgba(69, 183, 170, 0.18), transparent 34%);
   border: 1px solid rgba(21, 22, 33, 0.08);
   box-shadow: 0 24px 70px rgba(15, 23, 42, 0.08);
   backdrop-filter: blur(18px);
@@ -91,14 +50,14 @@ body {
 .dark .premium-surface {
   background:
     linear-gradient(135deg, rgba(21, 22, 33, 0.88), rgba(21, 22, 33, 0.62)),
-    radial-gradient(circle at top left, rgba(184, 178, 176, 0.14), transparent 38%);
+    radial-gradient(circle at top left, rgba(69, 183, 170, 0.14), transparent 38%);
   border-color: rgba(255, 255, 255, 0.1);
   box-shadow: 0 24px 70px rgba(0, 0, 0, 0.22);
 }
 
 .github-language-scroll {
   scrollbar-width: thin;
-  scrollbar-color: #b8b2b0 transparent;
+  scrollbar-color: #45b7aa transparent;
   scroll-behavior: smooth;
 }
 
@@ -110,27 +69,27 @@ body {
   background: linear-gradient(
     to bottom,
     transparent,
-    rgba(184, 178, 176, 0.12),
+    rgba(69, 183, 170, 0.12),
     transparent
   );
   border-radius: 999px;
 }
 
 .github-language-scroll::-webkit-scrollbar-thumb {
-  background: linear-gradient(180deg, #151621 0%, #b8b2b0 100%);
+  background: linear-gradient(180deg, #151621 0%, #45b7aa 100%);
   border: 3px solid transparent;
   border-radius: 999px;
   background-clip: padding-box;
 }
 
 .github-language-scroll::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(180deg, #b8b2b0 0%, #151621 100%);
+  background: linear-gradient(180deg, #45b7aa 0%, #151621 100%);
   border: 2px solid transparent;
   background-clip: padding-box;
 }
 
 .dark .github-language-scroll {
-  scrollbar-color: #b8b2b0 transparent;
+  scrollbar-color: #45b7aa transparent;
 }
 
 .dark .github-language-scroll::-webkit-scrollbar-track {
@@ -143,13 +102,13 @@ body {
 }
 
 .dark .github-language-scroll::-webkit-scrollbar-thumb {
-  background: linear-gradient(180deg, #ffffff 0%, #b8b2b0 100%);
+  background: linear-gradient(180deg, #ffffff 0%, #45b7aa 100%);
   border: 3px solid transparent;
   background-clip: padding-box;
 }
 
 .dark .github-language-scroll::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(180deg, #b8b2b0 0%, #ffffff 100%);
+  background: linear-gradient(180deg, #45b7aa 0%, #ffffff 100%);
   border: 2px solid transparent;
   background-clip: padding-box;
 }

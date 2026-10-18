@@ -1,103 +1,33 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
+import { ArrowUpRight } from 'lucide-react';
 import { EDUCATION, TRANSLATIONS } from '../../constants';
 import { Language } from '../../types';
-import { CapsuleDivider } from '../Shared/StyledForms';
-import { ArrowRight, Layers, GraduationCap } from 'lucide-react';
+import { CapsuleDivider, MotionWords } from '../Shared/StyledForms';
 import { useRevealOnScroll } from '../../hooks/useRevealOnScroll';
 
-interface AboutSectionProps {
-  language: Language;
-}
-
-const AboutSection: React.FC<AboutSectionProps> = ({ language }) => {
-  const t = TRANSLATIONS[language];
-  const navigate = useNavigate();
-  const revealRef = useRevealOnScroll<HTMLElement>();
-
-  const handleGoToProjects = (e: React.MouseEvent) => {
-    e.preventDefault();
-    navigate('/realisations');
-  };
-
+const AboutSection: React.FC<{ language: Language }> = ({ language }) => {
+  const ref = useRevealOnScroll<HTMLElement>();
   return (
-    <section ref={revealRef} id="about" className="py-12 sm:py-20 px-4 sm:px-6">
-      <div className="max-w-5xl mx-auto space-y-16 sm:space-y-24">
-
-        {/* --- Education Section --- */}
-        <div className="portfolio-reveal scroll-mt-24">
-          <CapsuleDivider className="mb-10 sm:mb-12 w-fit mx-auto sm:mx-0">
-            {t.sections.education}
-          </CapsuleDivider>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-10 sm:gap-12">
-            {EDUCATION[language].map((edu, idx) => (
-              <div key={idx} className="group relative rounded-3xl border border-transparent p-5 pl-8 transition-all duration-300 hover:border-[#b8b2b0]/20 hover:bg-white/70 hover:shadow-xl hover:shadow-slate-200/40 dark:hover:bg-white/[0.03] dark:hover:shadow-none">
-                <div className="absolute left-0 top-1 bottom-1 w-1.5 bg-[#BDC3C7]/30 dark:bg-white/10 rounded-full group-hover:bg-[#b8b2b0] transition-colors duration-500"></div>
-
-                <div className="flex items-start gap-3 mb-2">
-                  <div className="p-2 bg-[#b8b2b0]/10 rounded-lg text-[#b8b2b0] opacity-0 group-hover:opacity-100 transition-opacity -ml-2 sm:ml-0">
-                    <GraduationCap size={20} />
-                  </div>
-                  <div>
-                    <h3 className="text-xl sm:text-2xl font-black text-[#151621] dark:text-white leading-tight">
-                      {edu.degree}
-                    </h3>
-                    <p className="text-[#b8b2b0] font-extrabold uppercase tracking-widest text-xs sm:text-sm mt-1">
-                      {edu.school}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="pl-12">
-                  {edu.details && (
-                    <p className="text-sm text-[#151621]/60 dark:text-gray-400 font-medium leading-relaxed pl-2 sm:pl-0 border-l-2 border-transparent sm:border-none">
-                      {edu.details}
-                    </p>
-                  )}
-                </div>
-              </div>
-            ))}
+    <section ref={ref} id="about">
+      <CapsuleDivider className="portfolio-reveal mb-8">{language === 'fr' ? 'Le parcours' : 'The background'} / 02</CapsuleDivider>
+      <h2 className="cinema-about-heading portfolio-reveal"><MotionWords>{language === 'fr' ? 'La technique au service des usages.' : 'Engineering for everyday use.'}</MotionWords></h2>
+      <h3 className="cinema-eyebrow portfolio-reveal mb-6">{TRANSLATIONS[language].sections.education}</h3>
+      <div className="cinema-education">
+        {EDUCATION[language].map((education, index) => (
+          <div key={index} className="cinema-education-item portfolio-reveal">
+            <h3>{education.degree}</h3><p>{education.school}</p>
+            {education.details && <p>{education.details}</p>}
           </div>
+        ))}
+      </div>
+      <div className="cinema-about-link portfolio-reveal">
+        <div><h3 className="cinema-eyebrow mb-3">{language === 'fr' ? 'Curieux de voir mes réalisations ?' : "Curious to see what I've built?"}</h3>
+          <p>{language === 'fr' ? "Découvrez l'ensemble de mes projets académiques et personnels, ainsi que mon activité récente sur GitHub." : 'Discover all my academic and personal projects, as well as my recent activity on GitHub.'}</p>
         </div>
-
-        <div className="portfolio-reveal scroll-mt-24">
-          <CapsuleDivider className="mb-10 sm:mb-12 w-fit mx-auto sm:mx-0">
-            {t.sections.academicProjects}
-          </CapsuleDivider>
-
-          {/* --- Academic Projects Teaser (CTA CARD) --- */}
-          <div className="group relative flex flex-col items-center justify-between gap-8 overflow-hidden rounded-[2rem] bg-[#151621] p-8 text-center shadow-2xl shadow-[#151621]/10 transition-transform duration-500 hover:-translate-y-1 sm:flex-row sm:p-12 sm:text-left dark:bg-white/5 dark:shadow-none">
-            <div className="absolute top-0 right-0 bg-[#b8b2b0] rounded-full blur-[80px] opacity-10 sm:opacity-20 -translate-y-1/2 translate-x-1/3 pointer-events-none"></div>
-            <div className="relative z-10 max-w-lg">
-              <h3 className="text-2xl sm:text-3xl font-black text-white mb-3">
-                {language === 'fr' ? "Curieux de voir mes réalisations ?" : "Curious to see what I've built?"}
-              </h3>
-              <p className="text-gray-400 text-sm sm:text-base leading-relaxed">
-                {language === 'fr'
-                  ? "Découvrez l'ensemble de mes projets académiques et personnels, ainsi que mon activité récente sur GitHub."
-                  : "Discover all my academic and personal projects, as well as my recent activity on GitHub."}
-              </p>
-            </div>
-
-            <div className="relative z-10 shrink-0">
-              {/* 4. MODIFICATION ICI : Utilisation du onClick au lieu du href direct */}
-              <a
-                href="/realisations"
-                onClick={handleGoToProjects}
-                className="flex items-center gap-3 px-8 py-4 rounded-full bg-white text-[#151621] hover:bg-[#b8b2b0] hover:text-white transition-all duration-300 font-black uppercase tracking-widest text-sm shadow-xl transform hover:-translate-y-1 cursor-pointer"
-              >
-                <Layers size={20} />
-                {language === 'fr' ? "Voir les projets" : "View Projects"}
-                <ArrowRight size={20} />
-              </a>
-            </div>
-          </div>
-        </div>
-
+        <Link to="/realisations" className="cinema-text-link">{language === 'fr' ? 'Toutes les réalisations' : 'All projects'}<ArrowUpRight size={20} /></Link>
       </div>
     </section>
   );
 };
-
 export default AboutSection;

@@ -1,17 +1,57 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useRef, useState, useMemo } from 'react';
 import { createPortal } from 'react-dom';
-import { Link } from 'react-router-dom';
-import { REALIZED_PROJECTS, TRANSLATIONS } from '../../constants';
+import { AnimatePresence, usePresence } from 'framer-motion';
+import { Link, useLocation, useSearchParams } from 'react-router-dom';
+import { REALIZED_PROJECTS } from '../../constants';
 import { Language, Project } from '../../types';
-import { ArrowLeft, Github, Briefcase, GraduationCap, User, X, Eye, Rocket, Filter, Check, Activity, CalendarDays, FolderGit2, ShieldCheck, Sparkles } from 'lucide-react';
+import { ArrowLeft, Github, Briefcase, GraduationCap, User, X, Eye, Rocket, Filter, Check, CalendarDays, ShieldCheck, Sparkles } from 'lucide-react';
 import { useRevealOnScroll } from '../../hooks/useRevealOnScroll';
 
 interface AllProjectsPageProps {
     language: Language;
+    isActive: boolean;
 }
 
-const ModalPortal: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-    return createPortal(children, document.body);
+const ModalPortal: React.FC<{ children: React.ReactNode; onClose: () => void; label: string }> = ({ children, onClose, label }) => {
+    const ref = useRef<HTMLDialogElement>(null);
+    const [isPresent, safeToRemove] = usePresence();
+    useEffect(() => {
+        if (isPresent || !safeToRemove) return;
+        const dialog = ref.current;
+        const panel = dialog?.querySelector('.cinema-modal');
+        const reduced = window.matchMedia('(prefers-reduced-motion: reduce)');
+        if (!panel?.animate || reduced.matches) { safeToRemove(); return; }
+        dialog.dataset.closing = 'true';
+        const currentStyle = getComputedStyle(panel);
+        const animation = panel.animate([
+            { opacity: currentStyle.opacity, transform: currentStyle.transform },
+            { opacity: 0, transform: 'translateY(8px)' },
+        ], { duration: 150, easing: 'cubic-bezier(0.23, 1, 0.32, 1)', fill: 'forwards' });
+        animation.finished.then(safeToRemove, () => {});
+        const preferenceChanged = () => { if (reduced.matches) safeToRemove(); };
+        reduced.addEventListener('change', preferenceChanged);
+        return () => { animation.cancel(); reduced.removeEventListener('change', preferenceChanged); };
+    }, [isPresent, safeToRemove]);
+    useEffect(() => {
+        const dialog = ref.current;
+        const previousFocus = document.activeElement;
+        dialog?.showModal();
+        document.body.style.overflow = 'hidden';
+        return () => {
+            dialog?.close();
+            if (!document.querySelector('.cinema-dialog[open]')) document.body.style.overflow = '';
+            if (previousFocus instanceof HTMLElement && previousFocus.isConnected && previousFocus.getClientRects().length) {
+                previousFocus.focus({ preventScroll: true });
+            } else {
+                document.getElementById('main-content')?.focus({ preventScroll: true });
+            }
+        };
+    }, []);
+    return createPortal(
+        <dialog ref={ref} className="cinema-dialog" aria-label={label} onClick={event => { if (event.target === event.currentTarget) onClose(); }} onCancel={event => { event.preventDefault(); onClose(); }}>
+            {children}
+        </dialog>, document.body
+    );
 };
 
 const FEATURED_TECH_FILTERS = [
@@ -27,8 +67,10 @@ const FEATURED_TECH_FILTERS = [
     { value: 'Prisma', label: 'Prisma' },
 ];
 
-const AllProjectsPage: React.FC<AllProjectsPageProps> = ({ language }) => {
+const AllProjectsPage: React.FC<AllProjectsPageProps> = ({ language, isActive }) => {
     const [selectedProject, setSelectedProject] = useState<Project | null>(null);
+    const [searchParams, setSearchParams] = useSearchParams();
+    const { pathname } = useLocation();
     const revealRef = useRevealOnScroll<HTMLDivElement>();
     
     // --- ÉTATS POUR LES FILTRES (MULTI-SELECTION) ---
@@ -37,17 +79,29 @@ const AllProjectsPage: React.FC<AllProjectsPageProps> = ({ language }) => {
     const [selectedCategories, setSelectedCategories] = useState<string[]>([]); 
     const [selectedTechs, setSelectedTechs] = useState<string[]>([]);
 
-    useEffect(() => {
-        const isLocked = selectedProject !== null || isFilterOpen;
-        document.body.style.overflow = isLocked ? 'hidden' : '';
-        return () => {
-            // Nettoyage immédiat pour ne pas bloquer l'animation de sortie de page
-            document.body.style.overflow = '';
-        };
-    }, [selectedProject, isFilterOpen]);
-
-    const t = TRANSLATIONS[language];
     const projects = REALIZED_PROJECTS[language];
+
+    useEffect(() => {
+        if (pathname !== '/realisations' || !isActive) {
+            setSelectedProject(null);
+            setIsFilterOpen(false);
+            return;
+        }
+        setSelectedProject(current => {
+            const slug = searchParams.get('project') || current?.slug;
+            return projects.find(project => project.slug === slug) || null;
+        });
+    }, [searchParams, projects, pathname, isActive]);
+
+    const closeProject = () => {
+        setSelectedProject(null);
+        if (searchParams.has('project')) {
+            const next = new URLSearchParams(searchParams);
+            next.delete('project');
+            setSearchParams(next, { replace: true });
+        }
+    };
+
 
     // 1. Garder uniquement les technologies fortes pour le filtre
     const featuredTechnologies = useMemo(() => {
@@ -105,40 +159,46 @@ const AllProjectsPage: React.FC<AllProjectsPageProps> = ({ language }) => {
     };
 
     return (
-        <div ref={revealRef} className="min-h-screen pt-28 pb-12 px-4 sm:px-6">
+        <div ref={revealRef} className="cinema-projects min-h-screen">
             <div className="max-w-6xl mx-auto">
 
                 {/* --- Header --- */}
-                <div className="portfolio-reveal flex flex-col md:flex-row items-center justify-between gap-6 mb-12 relative">
-                    <Link to="/" className="group flex items-center gap-2 text-[#151621] dark:text-white font-black uppercase tracking-widest text-xs hover:text-[#b8b2b0] transition-colors">
-                        <div className="p-2 bg-white dark:bg-white/10 rounded-full group-hover:bg-[#b8b2b0] group-hover:text-white transition-all shadow-md border border-slate-100 dark:border-white/5"><ArrowLeft size={18} /></div>
+                <div className="cinema-project-header mb-4">
+                    <Link to="/" className="group flex items-center gap-2 text-[#151621] dark:text-white font-black uppercase tracking-widest text-xs hover:text-[#45b7aa] transition-colors">
+                        <div className="p-2 bg-white dark:bg-white/10 rounded-full group-hover:bg-[#45b7aa] group-hover:text-white transition-all shadow-md border border-slate-100 dark:border-white/5"><ArrowLeft size={18} /></div>
                         {language === 'fr' ? "Retour" : "Back"}
                     </Link>
                     <div className="text-center">
                         <h1 className="text-3xl sm:text-4xl font-black text-[#151621] dark:text-white">{language === 'fr' ? "Projets Réalisés" : "Realized Projects"}</h1>
-                        <span className="block h-1.5 w-24 bg-[#b8b2b0] mx-auto mt-4 rounded-full"></span>
+                        <span className="block h-1.5 w-24 bg-[#45b7aa] mx-auto mt-4 rounded-full"></span>
                     </div>
-                    <button onClick={() => setIsFilterOpen(true)} className={`flex items-center gap-2 px-5 py-2.5 bg-white dark:bg-[#151621] rounded-full font-bold text-xs uppercase tracking-widest shadow-md hover:shadow-lg border transition-all relative ${activeFiltersCount > 0 ? 'border-[#b8b2b0] text-[#151621] dark:text-white' : 'border-slate-100 dark:border-white/10 text-[#151621] dark:text-white hover:border-[#b8b2b0]'}`}>
-                        <Filter size={16} className={activeFiltersCount > 0 ? "text-[#b8b2b0]" : ""} />
+                    <button onClick={() => setIsFilterOpen(true)} className={`flex items-center gap-2 px-5 py-2.5 bg-white dark:bg-[#151621] rounded-full font-bold text-xs uppercase tracking-widest shadow-md hover:shadow-lg border transition-all relative ${activeFiltersCount > 0 ? 'border-[#45b7aa] text-[#151621] dark:text-white' : 'border-slate-100 dark:border-white/10 text-[#151621] dark:text-white hover:border-[#45b7aa]'}`}>
+                        <Filter size={16} className={activeFiltersCount > 0 ? "text-[#45b7aa]" : ""} />
                         {language === 'fr' ? "Filtrer" : "Filter"}
-                        {activeFiltersCount > 0 && <span className="absolute -top-1 -right-1 w-5 h-5 bg-[#b8b2b0] text-white flex items-center justify-center rounded-full text-[10px] font-black shadow-sm">{activeFiltersCount}</span>}
+                        {activeFiltersCount > 0 && <span className="absolute -top-1 -right-1 w-5 h-5 bg-[#45b7aa] text-[#151621] flex items-center justify-center rounded-full text-[10px] font-black shadow-sm">{activeFiltersCount}</span>}
                     </button>
                 </div>
 
                 {/* --- RÉSULTATS --- */}
                 {filteredProjects.length > 0 ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                    <div className="cinema-project-grid">
                         {filteredProjects.map((project, idx) => {
                             const catStyle = getCategoryStyle(project.category);
                             return (
                                 <article
                                     key={project.slug || project.title}
+                                    role="button"
+                                    tabIndex={0}
+                                    aria-label={`${language === 'fr' ? 'Détails de' : 'Details of'} ${project.title}`}
+                                    onKeyDown={event => {
+                                        if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); setSelectedProject(project); }
+                                    }}
                                     onClick={() => setSelectedProject(project)}
-                                    className="group cursor-pointer bg-white dark:bg-[#151621] rounded-[1.75rem] overflow-hidden shadow-[0_18px_50px_rgba(15,23,42,0.08)] hover:shadow-[0_30px_80px_rgba(184,178,176,0.20)] hover:-translate-y-2 transition-all duration-500 border border-slate-100 dark:border-white/5 flex flex-col h-full transform-gpu"
+                                    className="cinema-project-entry portfolio-reveal group cursor-pointer bg-white dark:bg-[#151621] rounded-[1.75rem] overflow-hidden shadow-[0_18px_50px_rgba(15,23,42,0.08)] hover:shadow-[0_30px_80px_rgba(69,183,170,0.20)] hover:-translate-y-2 transition-all duration-500 border border-slate-100 dark:border-white/5 flex flex-col h-full transform-gpu"
                                 >
-                                    <div className="relative h-48 w-full overflow-hidden bg-[radial-gradient(circle_at_top_left,rgba(184,178,176,0.24),transparent_38%),linear-gradient(135deg,#f8fafc,#eef2f7)] dark:bg-[radial-gradient(circle_at_top_left,rgba(184,178,176,0.16),transparent_42%),linear-gradient(135deg,#1e212b,#11131b)]">
+                                    <div className="relative h-48 w-full overflow-hidden bg-[radial-gradient(circle_at_top_left,rgba(69,183,170,0.24),transparent_38%),linear-gradient(135deg,#f8fafc,#eef2f7)] dark:bg-[radial-gradient(circle_at_top_left,rgba(69,183,170,0.16),transparent_42%),linear-gradient(135deg,#1e212b,#11131b)]">
                                         {project.imageUrl ? (
-                                            <img src={project.imageUrl} alt={project.title} className="w-full h-full object-contain p-8 transition-transform duration-700 group-hover:scale-105" />
+                                            <img src={project.imageUrl} alt={project.title} loading="lazy" decoding="async" width="600" height="350" className="w-full h-full object-contain p-8 transition-transform duration-700 group-hover:scale-105" />
                                         ) : (
                                             <div className="w-full h-full flex items-center justify-center text-gray-400"><Briefcase size={32} /></div>
                                         )}
@@ -146,25 +206,25 @@ const AllProjectsPage: React.FC<AllProjectsPageProps> = ({ language }) => {
                                         <div className="absolute top-4 left-4"><div className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-white/95 backdrop-blur shadow-sm ${catStyle.text}`}>{catStyle.icon} {catStyle.label}</div></div>
                                         {project.status && <div className="absolute top-4 right-4 max-w-[48%] truncate rounded-full bg-white/90 px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-slate-600 shadow-sm backdrop-blur dark:bg-[#151621]/85 dark:text-slate-200">{project.status}</div>}
                                     </div>
-                                    <div className="p-6 flex flex-col flex-grow">
-                                        {project.type && <div className="mb-3 flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-[#b8b2b0]"><Sparkles size={13} /> {project.type}</div>}
-                                        <h3 className="text-xl font-black text-[#151621] dark:text-white mb-3 leading-tight group-hover:text-[#b8b2b0] transition-colors">{project.title}</h3>
+                                    <div className="cinema-project-info p-6 flex flex-col flex-grow">
+                                        {project.type && <div className="mb-3 flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-[#45b7aa]"><Sparkles size={13} /> {project.type}</div>}
+                                        <h2 className="text-xl text-[#151621] dark:text-white mb-3">{project.title}</h2>
                                         <p className="text-slate-600 dark:text-gray-400 text-sm leading-relaxed mb-5 line-clamp-3">{project.description}</p>
                                         {project.features && (
                                             <div className="mb-6 space-y-2">
                                                 {project.features.slice(0, 2).map((feature) => (
                                                     <div key={feature} className="flex items-start gap-2 text-xs text-slate-500 dark:text-gray-400">
-                                                        <ShieldCheck size={14} className="mt-0.5 shrink-0 text-[#b8b2b0]" />
+                                                        <ShieldCheck size={14} className="mt-0.5 shrink-0 text-[#45b7aa]" />
                                                         <span className="line-clamp-1">{feature}</span>
                                                     </div>
                                                 ))}
                                             </div>
                                         )}
-                                        <div className="mt-auto flex flex-wrap gap-2">{project.technologies.slice(0, 4).map((tech, i) => (<span key={i} className="px-2 py-1 bg-slate-100 dark:bg-white/10 text-[#151621] dark:text-gray-300 text-[10px] font-bold uppercase tracking-widest rounded-md">{tech}</span>))}{project.technologies.length > 4 && <span className="px-2 py-1 text-slate-400 text-[10px] font-bold">+{project.technologies.length - 4}</span>}</div>
+                                        <div className="cinema-project-technologies mt-auto flex flex-wrap gap-2">{project.technologies.slice(0, 4).map((tech, i) => (<span key={i} className="px-2 py-1 bg-slate-100 dark:bg-white/10 text-[#151621] dark:text-gray-300 text-[10px] font-bold uppercase tracking-widest rounded-md">{tech}</span>))}{project.technologies.length > 4 && <span className="px-2 py-1 text-slate-400 text-[10px] font-bold">+{project.technologies.length - 4}</span>}</div>
                                     </div>
                                     <div className="px-6 pb-6 pt-0 flex items-center justify-between gap-3 mt-auto text-[11px] font-bold text-slate-400">
                                         <span className="flex items-center gap-1.5"><CalendarDays size={14} /> {project.lastActivity || (language === 'fr' ? 'Analysé' : 'Analyzed')}</span>
-                                        <span className="flex items-center gap-2">{project.githubUrl && <Github size={16} />}{project.demoUrl && <Rocket size={16} className="text-[#b8b2b0]" />}</span>
+                                        <span className="flex items-center gap-2">{project.githubUrl && <Github size={16} />}{project.demoUrl && <Rocket size={16} className="text-[#45b7aa]" />}</span>
                                     </div>
                                 </article>
                             );
@@ -175,186 +235,108 @@ const AllProjectsPage: React.FC<AllProjectsPageProps> = ({ language }) => {
                         <div className="inline-flex justify-center items-center w-16 h-16 bg-gray-100 dark:bg-white/5 rounded-full mb-4 text-gray-400"><Filter size={32} /></div>
                         <h3 className="text-xl font-black text-[#151621] dark:text-white mb-2">{language === 'fr' ? 'Aucun projet trouvé' : 'No projects found'}</h3>
                         <p className="text-slate-500 dark:text-gray-400 mb-6">{language === 'fr' ? 'Essayez de changer les filtres de recherche.' : 'Try changing the search filters.'}</p>
-                        <button onClick={resetFilters} className="px-6 py-2 bg-[#b8b2b0] text-white rounded-full text-xs font-black uppercase tracking-widest">{language === 'fr' ? 'Réinitialiser' : 'Reset'}</button>
+                        <button onClick={resetFilters} className="px-6 py-2 bg-[#45b7aa] text-[#151621] rounded-full text-xs font-black uppercase tracking-widest">{language === 'fr' ? 'Réinitialiser' : 'Reset'}</button>
                     </div>
                 )}
 
 
-                {/* --- MODAL DE FILTRES --- */}
+                <AnimatePresence>
                 {isFilterOpen && (
-                    <ModalPortal>
-                        <div className="fixed inset-0 z-[300] flex items-end justify-center sm:items-center sm:px-5 animate-in fade-in duration-200">
-                            <div className="absolute inset-0 bg-[#151621]/75 backdrop-blur-xl" onClick={() => setIsFilterOpen(false)}></div>
-                            <div className="relative flex max-h-[92dvh] w-full max-w-2xl flex-col overflow-hidden rounded-t-[1.75rem] border border-white/75 bg-white shadow-[0_34px_110px_rgba(15,23,42,0.42)] animate-in slide-in-from-bottom-10 duration-300 sm:rounded-[1.75rem] sm:zoom-in-95 dark:border-white/10 dark:bg-[#1e212b]">
-
-                                <div className="relative overflow-hidden border-b border-slate-100 px-6 py-5 sm:px-7 dark:border-white/10">
-                                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(184,178,176,0.28),transparent_34%),linear-gradient(135deg,#ffffff,#f6f7f9)] dark:bg-[radial-gradient(circle_at_top_left,rgba(184,178,176,0.16),transparent_38%),linear-gradient(135deg,#242733,#171923)]"></div>
-                                    <div className="relative flex items-start justify-between gap-4">
-                                        <div>
-                                            <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-[#b8b2b0]/30 bg-white/70 px-3 py-1 text-[10px] font-black uppercase tracking-widest text-[#b8b2b0] shadow-sm backdrop-blur dark:bg-white/10">
-                                                <Filter size={13} />
-                                                {language === 'fr' ? 'Recherche avancée' : 'Advanced Search'}
-                                            </div>
-                                            <h2 className="text-2xl font-black leading-tight text-[#151621] dark:text-white">{language === 'fr' ? 'Affiner les projets' : 'Refine Projects'}</h2>
-                                            <p className="mt-2 text-sm leading-relaxed text-slate-500 dark:text-gray-400">
-                                                {language === 'fr'
-                                                    ? `${filteredProjects.length} résultat${filteredProjects.length > 1 ? 's' : ''} selon votre sélection.`
-                                                    : `${filteredProjects.length} result${filteredProjects.length > 1 ? 's' : ''} based on your selection.`}
-                                            </p>
-                                        </div>
-                                        <button
-                                            onClick={() => setIsFilterOpen(false)}
-                                            aria-label={language === 'fr' ? 'Fermer les filtres' : 'Close filters'}
-                                            className="grid h-10 w-10 shrink-0 place-items-center rounded-full border border-slate-200 bg-white text-[#151621] shadow-sm transition-all hover:-translate-y-0.5 hover:border-[#b8b2b0] hover:text-[#b8b2b0] dark:border-white/10 dark:bg-white/10 dark:text-white"
-                                        >
-                                            <X size={18} />
-                                        </button>
-                                    </div>
-
-                                </div>
-
-                                <div className="overflow-y-auto p-5 sm:p-7 custom-scrollbar">
-
-                                    {/* 1. Catégories (Multi-Select) */}
-                                    <div className="rounded-2xl border border-slate-100 bg-slate-50/80 p-4 sm:p-5 dark:border-white/10 dark:bg-white/[0.04]">
-                                        <div className="mb-4 flex items-center justify-between gap-4">
-                                            <div>
-                                                <h3 className="text-sm font-black text-[#151621] dark:text-white">{language === 'fr' ? 'Catégories' : 'Categories'}</h3>
-                                                <p className="mt-1 text-xs text-slate-500 dark:text-gray-400">{language === 'fr' ? 'Sélection multiple possible' : 'Multiple selections allowed'}</p>
-                                            </div>
-                                            {selectedCategories.length > 0 && <button onClick={() => setSelectedCategories([])} className="shrink-0 text-[10px] font-black uppercase tracking-widest text-[#b8b2b0] transition-colors hover:text-[#151621] dark:hover:text-white">{language === 'fr' ? 'Effacer' : 'Clear'}</button>}
-                                        </div>
-                                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-                                            {categories.map((cat) => {
-                                                const isSelected = selectedCategories.includes(cat.id);
-                                                return (
-                                                    <button
-                                                        key={cat.id}
-                                                        onClick={() => toggleCategory(cat.id)}
-                                                        className={`group flex min-h-[92px] flex-col justify-between rounded-xl border p-4 text-left transition-all
-                                                        ${isSelected 
-                                                            ? 'border-[#b8b2b0] bg-white text-[#151621] shadow-[0_14px_34px_rgba(184,178,176,0.22)] dark:bg-white/10 dark:text-white'
-                                                            : 'border-slate-200 bg-white text-slate-600 hover:-translate-y-0.5 hover:border-[#b8b2b0]/70 hover:shadow-md dark:border-white/10 dark:bg-white/5 dark:text-gray-300'}`}
-                                                    >
-                                                        <div className="flex items-start justify-between gap-3">
-                                                            <span className={`grid h-9 w-9 place-items-center rounded-full ${isSelected ? 'bg-[#b8b2b0] text-white' : 'bg-slate-100 text-slate-400 group-hover:text-[#b8b2b0] dark:bg-white/10'}`}>{cat.icon}</span>
-                                                            <span className={`grid h-6 w-6 place-items-center rounded-full border ${isSelected ? 'border-[#b8b2b0] bg-[#b8b2b0] text-white' : 'border-slate-200 text-transparent dark:border-white/10'}`}>
-                                                                <Check size={13} />
-                                                            </span>
-                                                        </div>
-                                                        <span className="mt-4 text-sm font-black">{cat.label}</span>
-                                                    </button>
-                                                );
-                                            })}
-                                        </div>
-                                    </div>
-
-                                    {/* 2. Technologies (Multi-Select) */}
-                                    <div className="mt-5 rounded-2xl border border-slate-100 bg-white p-4 sm:p-5 dark:border-white/10 dark:bg-white/[0.03]">
-                                        <div className="mb-4 flex items-center justify-between gap-4">
-                                            <div>
-                                                <h3 className="text-sm font-black text-[#151621] dark:text-white">{language === 'fr' ? 'Technologies' : 'Technologies'}</h3>
-                                                <p className="mt-1 text-xs text-slate-500 dark:text-gray-400">{language === 'fr' ? 'Choisissez les stacks à afficher' : 'Choose the stacks to display'}</p>
-                                            </div>
-                                            {selectedTechs.length > 0 && <button onClick={() => setSelectedTechs([])} className="shrink-0 text-[10px] font-black uppercase tracking-widest text-[#b8b2b0] transition-colors hover:text-[#151621] dark:hover:text-white">{language === 'fr' ? 'Effacer' : 'Clear'}</button>}
-                                        </div>
-                                        <div className="flex max-h-56 flex-wrap gap-2 overflow-y-auto p-1 custom-scrollbar">
-                                            {featuredTechnologies.map((tech) => {
-                                                const isSelected = selectedTechs.includes(tech.value);
-                                                return (
-                                                    <button
-                                                        key={tech.value}
-                                                        onClick={() => toggleTech(tech.value)}
-                                                        className={`flex items-center gap-2 rounded-full border px-3 py-2 text-xs font-bold transition-all
-                                                        ${isSelected
-                                                            ? 'border-[#b8b2b0] bg-[#151621] text-white shadow-md dark:bg-white dark:text-[#151621]'
-                                                            : 'border-slate-200 bg-slate-50 text-slate-600 hover:-translate-y-0.5 hover:border-[#b8b2b0] hover:bg-white hover:text-[#151621] dark:border-white/10 dark:bg-white/5 dark:text-gray-300 dark:hover:text-white'}`}
-                                                    >
-                                                        <span className={`h-1.5 w-1.5 rounded-full ${isSelected ? 'bg-[#b8b2b0]' : 'bg-slate-300 dark:bg-white/30'}`}></span>
-                                                        {tech.label}
-                                                        {isSelected && <Check size={12} />}
-                                                    </button>
-                                                );
-                                            })}
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div className="flex flex-col gap-3 border-t border-slate-100 bg-gray-50/90 p-4 sm:flex-row dark:border-white/10 dark:bg-white/5">
-                                    <button
-                                        onClick={resetFilters}
-                                        disabled={activeFiltersCount === 0}
-                                        className="rounded-xl border border-slate-200 px-5 py-3.5 text-xs font-black uppercase tracking-widest text-[#151621] transition-all hover:border-[#b8b2b0] hover:text-[#b8b2b0] disabled:cursor-not-allowed disabled:opacity-40 dark:border-white/10 dark:text-white"
-                                    >
-                                        {language === 'fr' ? 'Réinitialiser' : 'Reset'}
-                                    </button>
-                                    <button onClick={() => setIsFilterOpen(false)} className="flex-1 rounded-xl bg-[#151621] px-5 py-3.5 text-xs font-black uppercase tracking-widest text-white shadow-lg shadow-[#151621]/15 transition-all hover:-translate-y-0.5 hover:bg-[#b8b2b0] dark:bg-white dark:text-[#151621] dark:hover:bg-[#b8b2b0] dark:hover:text-white">
-                                        {language === 'fr' ? `Voir les résultats (${filteredProjects.length})` : `Show Results (${filteredProjects.length})`}
-                                    </button>
-                                </div>
+                    <ModalPortal key="filters" onClose={() => setIsFilterOpen(false)} label={language === 'fr' ? 'Affiner les projets' : 'Refine projects'}>
+                        <div className="cinema-modal cinema-modal-filters">
+                            <div className="cinema-modal-topline">
+                                <span className="cinema-eyebrow">{language === 'fr' ? 'La collection / Filtres' : 'The collection / Filters'}</span>
+                                <button onClick={() => setIsFilterOpen(false)} aria-label={language === 'fr' ? 'Fermer les filtres' : 'Close filters'} className="cinema-modal-close"><X size={19} /></button>
                             </div>
+                            <header className="cinema-modal-heading">
+                                <h2>{language === 'fr' ? 'Affiner les projets' : 'Refine projects'}</h2>
+                                <p role="status">{language === 'fr' ? `${filteredProjects.length} résultat${filteredProjects.length > 1 ? 's' : ''} selon votre sélection.` : `${filteredProjects.length} result${filteredProjects.length > 1 ? 's' : ''} based on your selection.`}</p>
+                            </header>
+                            <div className="cinema-modal-body">
+                                <section className="cinema-filter-group" aria-labelledby="filter-categories">
+                                    <div className="cinema-filter-label">
+                                        <h3 id="filter-categories">{language === 'fr' ? 'Catégories' : 'Categories'}</h3>
+                                        {selectedCategories.length > 0 && <button onClick={() => setSelectedCategories([])}>{language === 'fr' ? 'Effacer' : 'Clear'}</button>}
+                                    </div>
+                                    <p className="cinema-filter-hint">{language === 'fr' ? 'Sélection multiple possible' : 'Multiple selections allowed'}</p>
+                                    <div className="cinema-filter-options cinema-category-options">
+                                        {categories.map(cat => (
+                                            <button key={cat.id} aria-pressed={selectedCategories.includes(cat.id)} onClick={() => toggleCategory(cat.id)} className="cinema-filter-option">
+                                                {cat.icon}<span>{cat.label}</span><Check size={14} className="cinema-selection-check" />
+                                            </button>
+                                        ))}
+                                    </div>
+                                </section>
+                                <section className="cinema-filter-group" aria-labelledby="filter-technologies">
+                                    <div className="cinema-filter-label">
+                                        <h3 id="filter-technologies">Technologies</h3>
+                                        {selectedTechs.length > 0 && <button onClick={() => setSelectedTechs([])}>{language === 'fr' ? 'Effacer' : 'Clear'}</button>}
+                                    </div>
+                                    <p className="cinema-filter-hint">{language === 'fr' ? 'Choisissez les stacks à afficher' : 'Choose the stacks to display'}</p>
+                                    <div className="cinema-filter-options">
+                                        {featuredTechnologies.map(tech => (
+                                            <button key={tech.value} aria-pressed={selectedTechs.includes(tech.value)} onClick={() => toggleTech(tech.value)} className="cinema-filter-option">
+                                                <span>{tech.label}</span><Check size={14} className="cinema-selection-check" />
+                                            </button>
+                                        ))}
+                                    </div>
+                                </section>
+                            </div>
+                            <footer className="cinema-modal-footer">
+                                <button onClick={resetFilters} disabled={activeFiltersCount === 0} className="cinema-modal-secondary">{language === 'fr' ? 'Réinitialiser' : 'Reset'}</button>
+                                <button onClick={() => setIsFilterOpen(false)} className="cinema-button">{language === 'fr' ? `Voir les résultats (${filteredProjects.length})` : `Show Results (${filteredProjects.length})`}<ArrowLeft size={16} className="rotate-180" /></button>
+                            </footer>
                         </div>
                     </ModalPortal>
                 )}
 
-
-                {/* --- MODAL DE DÉTAILS PROJET --- */}
                 {selectedProject && (
-                    <ModalPortal>
-                        <div className="fixed inset-0 z-[300] flex items-center justify-center px-4 py-6 animate-in fade-in duration-300 sm:py-8">
-                            <div className="absolute inset-0 cursor-pointer bg-[#151621]/75 backdrop-blur-md" onClick={() => setSelectedProject(null)}></div>
-                            <div className="relative flex max-h-[90dvh] w-full max-w-3xl flex-col overflow-hidden rounded-[1.5rem] border border-white/70 bg-white shadow-[0_32px_100px_rgba(15,23,42,0.38)] animate-in zoom-in-95 duration-300 sm:rounded-[1.75rem] dark:border-white/10 dark:bg-[#1e212b]">
-                                <button onClick={() => setSelectedProject(null)} className="absolute top-4 right-4 z-10 p-2 bg-black/20 hover:bg-black/40 text-white rounded-full transition-colors backdrop-blur-md"><X size={20} /></button>
-                                <div className="h-56 sm:h-72 w-full shrink-0 relative bg-[radial-gradient(circle_at_top_left,rgba(184,178,176,0.28),transparent_36%),linear-gradient(135deg,#f8fafc,#e7ebf1)] dark:bg-[radial-gradient(circle_at_top_left,rgba(184,178,176,0.18),transparent_40%),linear-gradient(135deg,#1e212b,#11131b)]">
-                                    {selectedProject.imageUrl && <img src={selectedProject.imageUrl} alt={selectedProject.title} className="w-full h-full object-contain p-10" />}
-                                    <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent"></div>
-                                    <div className="absolute bottom-6 left-6 sm:left-8 right-6">
-                                        <h2 className="text-2xl sm:text-3xl font-black text-white mb-2 shadow-sm">{selectedProject.title}</h2>
-                                        {(() => {
-                                            const style = getCategoryStyle(selectedProject.category);
-                                            return <span className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-white/20 text-white backdrop-blur-md border border-white/20`}>{style.icon} {style.label}</span>;
-                                        })()}
-                                    </div>
-                                </div>
-                                <div className="p-6 sm:p-8 overflow-y-auto custom-scrollbar">
-                                    {(selectedProject.type || selectedProject.complexity || selectedProject.lastActivity) && (
-                                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-8">
-                                            {selectedProject.type && <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4 dark:border-white/10 dark:bg-white/5"><p className="mb-1 flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-slate-400"><FolderGit2 size={13} /> Type</p><p className="text-sm font-black text-[#151621] dark:text-white">{selectedProject.type}</p></div>}
-                                            {selectedProject.complexity && <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4 dark:border-white/10 dark:bg-white/5"><p className="mb-1 flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-slate-400"><Activity size={13} /> {language === 'fr' ? 'Complexité' : 'Complexity'}</p><p className="text-sm font-black text-[#151621] dark:text-white">{selectedProject.complexity}</p></div>}
-                                            {selectedProject.lastActivity && <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4 dark:border-white/10 dark:bg-white/5"><p className="mb-1 flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-slate-400"><CalendarDays size={13} /> {language === 'fr' ? 'Activité' : 'Activity'}</p><p className="text-sm font-black text-[#151621] dark:text-white">{selectedProject.lastActivity}</p></div>}
-                                        </div>
-                                    )}
-                                    <div className="mb-8">
-                                        <h3 className="text-xs font-black text-[#b8b2b0] uppercase tracking-widest mb-3 flex items-center gap-2">{language === 'fr' ? 'À propos du projet' : 'About the Project'}<span className="h-px bg-[#b8b2b0]/20 flex-grow"></span></h3>
-                                        <p className="text-slate-600 dark:text-gray-300 text-base leading-relaxed">{selectedProject.fullDescription || selectedProject.description}</p>
-                                    </div>
-                                    {selectedProject.features && (
-                                        <div className="mb-8">
-                                            <h3 className="text-xs font-black text-[#b8b2b0] uppercase tracking-widest mb-3">{language === 'fr' ? 'Fonctionnalités clés' : 'Key Features'}</h3>
-                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                                {selectedProject.features.map((feature) => (
-                                                    <div key={feature} className="flex items-start gap-3 rounded-2xl border border-slate-100 bg-white p-4 text-sm text-slate-600 shadow-sm dark:border-white/10 dark:bg-white/5 dark:text-gray-300">
-                                                        <Check size={16} className="mt-0.5 shrink-0 text-[#b8b2b0]" />
-                                                        <span>{feature}</span>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    )}
-                                    <div className="mb-8">
-                                        <h3 className="text-xs font-black text-[#b8b2b0] uppercase tracking-widest mb-3">{language === 'fr' ? 'Technologies utilisées' : 'Technologies Used'}</h3>
-                                        <div className="flex flex-wrap gap-2">{selectedProject.technologies.map((tech, i) => (<span key={i} className="px-3 py-1.5 bg-slate-100 dark:bg-white/5 text-[#151621] dark:text-white text-xs font-bold rounded-lg border border-slate-200 dark:border-white/10">{tech}</span>))}</div>
-                                    </div>
-
-                                    <div className="flex flex-col sm:flex-row gap-4 pt-6 border-t border-slate-100 dark:border-white/10 mt-auto">
-                                        {selectedProject.githubUrl ? ( <a href={selectedProject.githubUrl} target="_blank" rel="noopener noreferrer" className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-xl bg-[#151621] dark:bg-white text-white dark:text-[#151621] font-black uppercase tracking-widest text-xs hover:opacity-90 transition-opacity shadow-lg"><Github size={18} /> GitHub</a> ) : ( <button disabled className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-xl bg-gray-100 dark:bg-white/5 text-gray-400 font-black uppercase tracking-widest text-xs cursor-not-allowed border border-dashed border-gray-300 dark:border-gray-700"><Github size={18} /> {language === 'fr' ? 'Code Privé' : 'Private Code'}</button> )}
-                                        {selectedProject.demoUrl && ( <a href={selectedProject.demoUrl} target="_blank" rel="noopener noreferrer" className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-xl bg-[#b8b2b0] text-white font-black uppercase tracking-widest text-xs hover:bg-[#9f9896] transition-colors shadow-lg shadow-[#b8b2b0]/30 hover:shadow-xl hover:-translate-y-0.5"><Rocket size={18} /> {language === 'fr' ? 'Voir le projet' : 'Live Demo'}</a> )}
-                                    </div>
-                                </div>
+                    <ModalPortal key="project" onClose={closeProject} label={selectedProject.title}>
+                        <div className="cinema-modal cinema-modal-project">
+                            <div className="cinema-modal-topline">
+                                <span className="cinema-eyebrow">{language === 'fr' ? 'La collection' : 'The collection'} / {String(projects.indexOf(selectedProject) + 1).padStart(2, '0')}</span>
+                                <button onClick={closeProject} aria-label={language === 'fr' ? 'Fermer le projet' : 'Close project'} className="cinema-modal-close"><X size={19} /></button>
                             </div>
+                            <header className="cinema-modal-project-intro">
+                                <div>
+                                    <p className="cinema-modal-category">{getCategoryStyle(selectedProject.category).label}{selectedProject.status && <span> / {selectedProject.status}</span>}</p>
+                                    <h2>{selectedProject.title}</h2>
+                                </div>
+                                {selectedProject.imageUrl && <div className="cinema-modal-art"><img src={selectedProject.imageUrl} alt={selectedProject.title} width="180" height="140" /></div>}
+                            </header>
+                            <div className="cinema-modal-body">
+                                {(selectedProject.type || selectedProject.complexity || selectedProject.lastActivity) && (
+                                    <dl className="cinema-modal-facts">
+                                        {selectedProject.type && <div><dt>Type</dt><dd>{selectedProject.type}</dd></div>}
+                                        {selectedProject.complexity && <div><dt>{language === 'fr' ? 'Complexité' : 'Complexity'}</dt><dd>{selectedProject.complexity}</dd></div>}
+                                        {selectedProject.lastActivity && <div><dt>{language === 'fr' ? 'Activité' : 'Activity'}</dt><dd>{selectedProject.lastActivity}</dd></div>}
+                                    </dl>
+                                )}
+                                <section className="cinema-project-story">
+                                    <h3>{language === 'fr' ? 'À propos du projet' : 'About the project'}</h3>
+                                    <p>{selectedProject.fullDescription || selectedProject.description}</p>
+                                </section>
+                                {selectedProject.features && (
+                                    <section className="cinema-project-story">
+                                        <h3>{language === 'fr' ? 'Fonctionnalités clés' : 'Key features'}</h3>
+                                        <ul className="cinema-modal-features">
+                                            {selectedProject.features.map(feature => <li key={feature}><Check size={15} /><span>{feature}</span></li>)}
+                                        </ul>
+                                    </section>
+                                )}
+                                <section className="cinema-project-story">
+                                    <h3>{language === 'fr' ? 'Technologies utilisées' : 'Technologies used'}</h3>
+                                    <ul className="cinema-modal-technologies">{selectedProject.technologies.map(tech => <li key={tech}>{tech}</li>)}</ul>
+                                </section>
+                            </div>
+                            <footer className="cinema-modal-footer">
+                                {selectedProject.githubUrl ? <a href={selectedProject.githubUrl} target="_blank" rel="noopener noreferrer" className="cinema-modal-secondary"><Github size={17} /> GitHub</a> : <button disabled className="cinema-modal-secondary"><Github size={17} />{language === 'fr' ? 'Code Privé' : 'Private Code'}</button>}
+                                {selectedProject.demoUrl && <a href={selectedProject.demoUrl} target="_blank" rel="noopener noreferrer" className="cinema-button">{language === 'fr' ? 'Voir le projet' : 'Live Demo'}<Rocket size={16} /></a>}
+                            </footer>
                         </div>
                     </ModalPortal>
                 )}
+                </AnimatePresence>
 
             </div>
         </div>

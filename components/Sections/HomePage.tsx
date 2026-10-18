@@ -7,10 +7,10 @@ import ContactSection from './ContactSection';
 import ActiviteGithub from './ActiviteGithub';
 import { Language } from '../../types';
 
-const HomePage: React.FC<{ language: Language }> = ({ language }) => {
+const HomePage: React.FC<{ language: Language; isActive: boolean }> = ({ language, isActive }) => {
   return (
     <>
-      <HeroSection language={language} />
+      <HeroSection language={language} isActive={isActive} />
       <div className="space-y-0">
         <AboutSection language={language} />
         <SkillsSection language={language} />
