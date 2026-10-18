@@ -106,7 +106,6 @@ const HeroSection: React.FC<{ language: Language; isActive: boolean }> = ({ lang
           <div className="cinema-intro-bottom cinema-intro-item">
             <div>
               <p className="cinema-role">{language === 'fr' ? 'Développeur full-stack' : 'Full-stack developer'}</p>
-              <p className="cinema-specialty">Java / Django <span>— Junior</span></p>
               <div className="cinema-actions">
                 <Link to="/realisations" className="cinema-button"><span className="cinema-button-content">{t.hero.viewProjects}<ArrowUpRight size={17} /></span></Link>
                 <a href="#contact" onClick={goToContact} className="cinema-text-link">{t.hero.contactMe}<ArrowRight size={16} /></a>

@@ -226,7 +226,7 @@ const App: React.FC = () => {
           <div className="cinema-footer-inner">
             <p className="cinema-footer-name">RANDRIAMAHERY JASON CHRIS</p>
             <p className="cinema-eyebrow">
-              {language === 'fr' ? 'DÉVELOPPEUR FULL-STACK JAVA / DJANGO' : 'FULL-STACK JAVA / DJANGO DEVELOPER'}
+              {language === 'fr' ? 'DÉVELOPPEUR FULL-STACK' : 'FULL-STACK DEVELOPER'}
             </p>
           </div>
         </footer>
