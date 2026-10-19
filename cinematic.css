@@ -21,7 +21,7 @@
   --cinema-panel: #151621;
   color-scheme: dark;
 }
-html { scroll-padding-top: 100px; }
+html { scroll-padding-top: 100px; scrollbar-gutter: stable; }
 body { background: var(--cinema-bg); color: var(--cinema-ink); }
 button, a { -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
 button { cursor: pointer; }
