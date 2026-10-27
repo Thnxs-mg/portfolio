@@ -11,7 +11,7 @@ on:
     - cron: '17 */6 * * *'
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: github-activity-dev_version
@@ -26,6 +26,7 @@ jobs:
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           ref: dev_version
+          persist-credentials: false
 
       - name: Setup Node
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
@@ -43,11 +44,14 @@ jobs:
           node scripts/test-github-data.mjs --snapshots
 
       - name: Publish refreshed data to the deployment branch
+        env:
+          GH_TOKEN: ${{ secrets.GH_CONTRIBUTIONS_TOKEN }}
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add public/github-profile.json public/github-contributions.json
           if ! git diff --cached --quiet; then
             git commit -m 'chore: refresh GitHub activity'
+            gh auth setup-git
             git push origin HEAD:dev_version
           fi
