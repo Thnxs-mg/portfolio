@@ -57,12 +57,9 @@ const ContactSection: React.FC<ContactSectionProps> = ({ language }) => {
 
           {/* --- PARTIE GAUCHE : INFOS --- */}
           <div className="lg:w-7/12 p-8 sm:p-12 lg:p-16 flex flex-col justify-center relative z-10">
-            <h2 className="portfolio-reveal text-3xl sm:text-4xl lg:text-5xl font-black text-[#151621] dark:text-white mb-6 leading-[1.1]">
+            <h2 className="portfolio-reveal relative -top-4 text-3xl sm:text-4xl lg:text-5xl font-black text-[#151621] dark:text-white mb-6 leading-[1.1]">
               {t.contact.ready}
             </h2>
-            <p className="portfolio-reveal text-slate-600 dark:text-gray-400 mb-10 text-lg leading-relaxed max-w-md">
-              {t.contact.sub}
-            </p>
 
             <div className="portfolio-reveal space-y-6">
               <ContactItem

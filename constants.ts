@@ -153,7 +153,6 @@ export const TRANSLATIONS: Record<'fr' | 'en', Translations> = {
     },
     contact: {
       ready: 'Prêt à collaborer ?',
-      sub: "Je suis actuellement à la recherche d'opportunités en tant que développeur full-stack. N'hésitez pas à me contacter !",
       socials: 'Réseaux Sociaux',
       cvText: "Besoin d'un CV format PDF ?",
       downloadBtn: 'Télécharger mon CV'
@@ -173,7 +172,6 @@ export const TRANSLATIONS: Record<'fr' | 'en', Translations> = {
     },
     contact: {
       ready: 'Ready to collaborate?',
-      sub: "I am currently looking for opportunities as a full-stack developer. Feel free to contact me!",
       socials: 'Social Networks',
       cvText: "Need a PDF resume?",
       downloadBtn: 'Download Resume'

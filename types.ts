@@ -86,7 +86,6 @@ export interface Translations {
   };
   contact: {
     ready: string;
-    sub: string;
     socials: string;
     cvText: string;
     downloadBtn: string;

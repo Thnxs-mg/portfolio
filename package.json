@@ -9,6 +9,7 @@
     "build": "vite build",
     "preview": "vite preview",
     "check:ui": "node scripts/check-portfolio.mjs",
+    "check:github-cache": "node scripts/check-github-cache.mjs",
     "analyze:projects": "node scripts/analyze-local-projects.mjs",
     "fetch:github-profile": "node scripts/fetch-github-profile.mjs",
     "fetch:github-data": "npm run fetch:github-profile && npm run fetch:github-contributions",
