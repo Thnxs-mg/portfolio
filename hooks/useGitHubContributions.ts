@@ -1,18 +1,5 @@
 import { useEffect, useState } from 'react';
 
-interface GitHubContributionDayResponse {
-  date: string;
-  count: number;
-  level: number;
-}
-
-interface GitHubContributionsResponse {
-  total: {
-    lastYear: number;
-  };
-  contributions: GitHubContributionDayResponse[];
-}
-
 interface StaticGitHubContributionsResponse {
   username?: string;
   generatedAt?: string | null;
@@ -62,34 +49,6 @@ function getLevelFromColor(color: string) {
   return index === -1 ? 0 : index;
 }
 
-function groupByWeek(contributions: GitHubContributionDayResponse[]): GitHubContributionWeek[] {
-  const sortedDays = [...contributions].sort((a, b) => a.date.localeCompare(b.date));
-  const weeks: GitHubContributionWeek[] = [];
-
-  sortedDays.forEach((day) => {
-    const weekday = getUtcWeekday(day.date);
-
-    if (weekday === 0 || weeks.length === 0) {
-      weeks.push({ days: [] });
-    }
-
-    weeks[weeks.length - 1].days[weekday] = {
-      date: day.date,
-      count: day.count,
-      level: day.level,
-    };
-  });
-
-  return weeks.map((week) => ({
-    days: Array.from({ length: 7 }, (_, index) => week.days[index] ?? {
-      date: null,
-      count: 0,
-      level: 0,
-      isOutsideRange: true,
-    }),
-  }));
-}
-
 function mapStaticWeeks(data: StaticGitHubContributionsResponse): GitHubContributionWeek[] {
   return data.weeks.map((week) => {
     const days: GitHubContributionDay[] = Array.from({ length: 7 }, emptyDay);
@@ -110,15 +69,14 @@ function mapStaticWeeks(data: StaticGitHubContributionsResponse): GitHubContribu
 }
 
 function hasUsableStaticData(data: StaticGitHubContributionsResponse, username: string) {
+  if (!data || typeof data !== 'object') return false;
   const sameUser = !data.username || data.username.toLowerCase() === username.toLowerCase();
-  return sameUser && Array.isArray(data.weeks) && data.weeks.length > 0;
-}
-
-function normalizeFallbackResponse(data: GitHubContributionsResponse) {
-  return {
-    weeks: groupByWeek(data.contributions ?? []),
-    total: data.total?.lastYear ?? 0,
-  };
+  return sameUser && Number.isFinite(data.totalContributions) && data.totalContributions >= 0
+    && Array.isArray(data.weeks) && data.weeks.length > 0
+    && data.weeks.every(week => Array.isArray(week.contributionDays) && week.contributionDays.every(day =>
+      /^\d{4}-\d{2}-\d{2}$/.test(day.date) && Number.isFinite(Date.parse(`${day.date}T00:00:00Z`))
+      && Number.isFinite(day.contributionCount) && day.contributionCount >= 0 && typeof day.color === 'string'
+    ));
 }
 
 function normalizeStaticResponse(data: StaticGitHubContributionsResponse) {
@@ -131,6 +89,7 @@ function normalizeStaticResponse(data: StaticGitHubContributionsResponse) {
 export function useGitHubContributions(username: string) {
   const [weeks, setWeeks] = useState<GitHubContributionWeek[]>(EMPTY_STATE.weeks);
   const [total, setTotal] = useState(EMPTY_STATE.total);
+  const [generatedAt, setGeneratedAt] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -138,97 +97,60 @@ export function useGitHubContributions(username: string) {
     let isMounted = true;
     const controller = new AbortController();
 
+    const cacheKey = `github-contributions-${username}`;
+    let latest: StaticGitHubContributionsResponse | null = null;
+    const apply = (data: StaticGitHubContributionsResponse) => {
+      if (!isMounted || !hasUsableStaticData(data, username)) return false;
+      if (latest && (Date.parse(latest.generatedAt ?? '') || 0) > (Date.parse(data.generatedAt ?? '') || 0)) return false;
+      latest = data;
+      const result = normalizeStaticResponse(data);
+      setWeeks(result.weeks);
+      setTotal(result.total);
+      setGeneratedAt(data.generatedAt ?? null);
+      setLoading(false);
+      try { localStorage.setItem(cacheKey, JSON.stringify(data)); } catch { /* Optional cache. */ }
+      return true;
+    };
+    let fetching = false;
     const fetchContributions = async () => {
+      if (fetching) return;
+      fetching = true;
+      setError(null);
       try {
-        setLoading(true);
-        setError(null);
-
-        // Try to load from cache first
-        const cacheKey = `github-contributions-${username}`;
-        const cached = localStorage.getItem(cacheKey);
-
-        if (cached) {
-          try {
-            const cachedData = JSON.parse(cached) as StaticGitHubContributionsResponse;
-            if (hasUsableStaticData(cachedData, username)) {
-              const result = normalizeStaticResponse(cachedData);
-              if (isMounted) {
-                setWeeks(result.weeks);
-                setTotal(result.total);
-                setLoading(false);
-              }
-            }
-          } catch {
-            // Invalid cache, ignore
-          }
-        }
-
-        const staticResponse = await fetch(`${import.meta.env.BASE_URL}github-contributions.json`, {
-          signal: controller.signal,
+        try {
+          const cached = localStorage.getItem(cacheKey);
+          if (cached) apply(JSON.parse(cached));
+        } catch { /* Storage can be blocked or contain an invalid value. */ }
+        const response = await fetch(`${import.meta.env.BASE_URL}github-contributions.json`, {
+          signal: AbortSignal.any([controller.signal, AbortSignal.timeout(15_000)]), cache: 'no-store',
         });
-
-        if (staticResponse.ok) {
-          const staticData = await staticResponse.json() as StaticGitHubContributionsResponse;
-
-          if (!isMounted) {
-            return;
-          }
-
-          if (hasUsableStaticData(staticData, username)) {
-            const result = normalizeStaticResponse(staticData);
-            setWeeks(result.weeks);
-            setTotal(result.total);
-
-            // Cache the data for future loads
-            try {
-              localStorage.setItem(cacheKey, JSON.stringify(staticData));
-            } catch {
-              // Storage full or not available, ignore
-            }
-            return;
-          }
-        }
-
-        const response = await fetch(
-          `https://github-contributions-api.jogruber.de/v4/${encodeURIComponent(username)}`,
-          { signal: controller.signal }
-        );
-
-        if (!response.ok) {
-          throw new Error('Impossible de récupérer les contributions GitHub');
-        }
-
-        const data = await response.json() as GitHubContributionsResponse;
-
-        if (!isMounted) {
-          return;
-        }
-
-        const result = normalizeFallbackResponse(data);
-        setWeeks(result.weeks);
-        setTotal(result.total);
+        if (!response.ok) throw new Error('Impossible de récupérer les contributions GitHub');
+        const data = await response.json() as StaticGitHubContributionsResponse;
+        if (!hasUsableStaticData(data, username)) throw new Error('Calendrier GitHub invalide');
+        apply(data);
       } catch (err) {
-        if (isMounted) {
-          if (err instanceof DOMException && err.name === 'AbortError') {
-            return;
-          }
-
-          setError(err instanceof Error ? err.message : 'Une erreur est survenue');
-        }
+        if (!isMounted || controller.signal.aborted) return;
+        setError(err instanceof Error ? err.message : 'Une erreur est survenue');
       } finally {
-        if (isMounted) {
-          setLoading(false);
-        }
+        fetching = false;
+        if (isMounted) setLoading(false);
       }
     };
 
-    fetchContributions();
+    const refreshWhenVisible = () => {
+      if (document.visibilityState === 'visible') void fetchContributions();
+    };
+    void fetchContributions();
+    const interval = window.setInterval(refreshWhenVisible, 15 * 60 * 1000);
+    document.addEventListener('visibilitychange', refreshWhenVisible);
 
     return () => {
       isMounted = false;
+      window.clearInterval(interval);
+      document.removeEventListener('visibilitychange', refreshWhenVisible);
       controller.abort();
     };
   }, [username]);
 
-  return { weeks, total, loading, error };
+  return { weeks, total, generatedAt, loading, error };
 }

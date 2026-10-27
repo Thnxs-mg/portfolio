@@ -1,34 +1,53 @@
-name: Update GitHub Contributions
+name: Update GitHub Activity
 
 on:
   workflow_dispatch:
+  push:
+    branches: [dev_version]
+    paths:
+      - '.github/workflows/update-github-contributions.yml'
+      - 'scripts/fetch-github-*.mjs'
   schedule:
-    - cron: '0 3 * * *'
+    - cron: '17 */6 * * *'
 
 permissions:
   contents: write
 
+concurrency:
+  group: github-activity-dev_version
+  cancel-in-progress: false
+
 jobs:
   update:
     runs-on: ubuntu-latest
-
+    timeout-minutes: 10
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - name: Checkout deployment branch
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: dev_version
 
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: 22
 
-      - name: Fetch contribution calendar
+      - name: Fetch GitHub profile and contribution calendar
         env:
           GH_CONTRIBUTIONS_TOKEN: ${{ secrets.GH_CONTRIBUTIONS_TOKEN }}
+          GH_PROFILE_TOKEN: ${{ secrets.GH_CONTRIBUTIONS_TOKEN }}
           GITHUB_USERNAME: Thnxs-mg
-        run: node scripts/fetch-github-contributions.mjs
+        run: |
+          test -n "$GH_CONTRIBUTIONS_TOKEN" || { echo 'Missing GH_CONTRIBUTIONS_TOKEN secret'; exit 1; }
+          npm run fetch:github-data
+          node scripts/test-github-data.mjs --snapshots
 
-      - name: Commit updated contribution data
-        uses: stefanzweifel/git-auto-commit-action@v5
-        with:
-          commit_message: 'chore: update GitHub contribution data'
-          file_pattern: public/github-contributions.json
+      - name: Publish refreshed data to the deployment branch
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add public/github-profile.json public/github-contributions.json
+          if ! git diff --cached --quiet; then
+            git commit -m 'chore: refresh GitHub activity'
+            git push origin HEAD:dev_version
+          fi

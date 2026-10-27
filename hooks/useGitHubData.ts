@@ -60,7 +60,8 @@ const EMPTY_SUMMARY: GitHubSummary = {
 };
 
 function isCurrentUser(data: StaticGitHubData, username: string) {
-  return !data.username || data.username.toLowerCase() === username.toLowerCase();
+  return !!data && typeof data === 'object' && !!data.user
+    && (!data.username || data.username.toLowerCase() === username.toLowerCase());
 }
 
 function toSummary(data: StaticGitHubData): GitHubSummary {
@@ -88,6 +89,7 @@ export function useGitHubData(username: string) {
   const [repositoryStats, setRepositoryStats] = useState<GitHubRepositoryStat[]>([]);
   const [user, setUser] = useState<GitHubUser | null>(null);
   const [summary, setSummary] = useState<GitHubSummary>(EMPTY_SUMMARY);
+  const [generatedAt, setGeneratedAt] = useState<string | null>(null);
   const [contributionWeeks] = useState<GitHubContributionWeek[]>([]);
   const [contributionTotal] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -98,57 +100,66 @@ export function useGitHubData(username: string) {
     let isMounted = true;
     const controller = new AbortController();
     const cacheKey = `github-data-${username}`;
+    let latestTimestamp = 0;
 
     const applyStaticData = (data: StaticGitHubData) => {
+      const timestamp = Date.parse(data.generatedAt ?? '') || 0;
+      if (!isCurrentUser(data, username) || timestamp < latestTimestamp) return;
+      latestTimestamp = timestamp;
       setUser(data.user ?? null);
       setRepositoryStats(data.repositories ?? []);
       setSummary(toSummary(data));
+      setGeneratedAt(data.generatedAt ?? null);
+      try { localStorage.setItem(cacheKey, JSON.stringify(data)); } catch { /* Optional cache. */ }
     };
 
+    let fetching = false;
     const fetchData = async () => {
+      if (fetching) return;
+      fetching = true;
       try {
-        setLoading(true);
         setError(null);
 
-        const cached = localStorage.getItem(cacheKey);
-        if (cached) {
-          try {
+        try {
+          const cached = localStorage.getItem(cacheKey);
+          if (cached) {
             const cachedData = JSON.parse(cached) as StaticGitHubData;
             if (isCurrentUser(cachedData, username) && isMounted) {
               applyStaticData(cachedData);
               setLoading(false);
             }
-          } catch {
-            localStorage.removeItem(cacheKey);
           }
-        }
+        } catch { /* Storage can be blocked or contain an invalid value. */ }
 
         const staticData = await fetchJson<StaticGitHubData>(
           `${import.meta.env.BASE_URL}github-profile.json`,
-          controller.signal
+          AbortSignal.any([controller.signal, AbortSignal.timeout(15_000)]),
+          { cache: 'no-store' }
         );
 
         if (!isMounted) return;
 
-        if (isCurrentUser(staticData, username)) {
-          applyStaticData(staticData);
-          try {
-            localStorage.setItem(cacheKey, JSON.stringify(staticData));
-          } catch {
-            // Non-critical: localStorage can be unavailable or full.
-          }
-        }
+        if (!isCurrentUser(staticData, username)) throw new Error('Profil GitHub invalide');
+        applyStaticData(staticData);
       } catch (err) {
         if (!isMounted || (err instanceof DOMException && err.name === 'AbortError')) return;
         setError(err instanceof Error ? err.message : 'Une erreur est survenue');
       } finally {
+        fetching = false;
         if (isMounted) setLoading(false);
       }
     };
 
-    fetchData();
+    const refreshWhenVisible = () => {
+      if (document.visibilityState === 'visible') void fetchData();
+    };
+    void fetchData();
+    const interval = window.setInterval(refreshWhenVisible, 15 * 60 * 1000);
+    document.addEventListener('visibilitychange', refreshWhenVisible);
 
     return () => {
+      window.clearInterval(interval);
+      document.removeEventListener('visibilitychange', refreshWhenVisible);
       isMounted = false;
       controller.abort();
     };
@@ -159,6 +170,7 @@ export function useGitHubData(username: string) {
     repositoryStats,
     user,
     summary,
+    generatedAt,
     contributionWeeks,
     contributionTotal,
     loading,

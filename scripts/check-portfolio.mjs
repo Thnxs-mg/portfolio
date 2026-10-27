@@ -405,13 +405,106 @@ async function transitionChecks(page) {
   return { passed: checks.length, checks };
 }
 
+async function githubChecks(page) {
+  const base = new URL('/', page.url()).href;
+  const savedCalendar = await (await page.request.get(`${base}github-contributions.json`)).json();
+  const savedProfile = await (await page.request.get(`${base}github-profile.json`)).json();
+  const checks = [];
+  const check = (condition, name) => { if (!condition) throw new Error(name); checks.push(name); };
+  const days = savedCalendar.weeks.flatMap(week => week.contributionDays);
+  check(days.reduce((sum, day) => sum + day.contributionCount, 0) === savedCalendar.totalContributions, 'Calendar total equals the sum of its days');
+  check(savedProfile.repositories.every(repo => repo.visibility === 'public'), 'Only public repository details are published');
+  const context = await page.context().browser().newContext({ viewport: { width: 1440, height: 1000 }, reducedMotion: 'reduce' });
+  const errors = [];
+  const now = Date.now();
+  let calendar = { ...savedCalendar, generatedAt: new Date(now).toISOString() };
+  let profile = { ...savedProfile, generatedAt: calendar.generatedAt };
+  let unavailable = false, malformed = false, thirdPartyRequests = 0;
+  try {
+    await context.route(/^https:\/\/fonts\.(googleapis|gstatic)\.com\//, route => route.abort());
+    await context.route('**/github-profile.json', route => unavailable ? route.abort() : route.fulfill({ json: profile }));
+    await context.route('**/github-contributions.json', route => unavailable ? route.abort() : route.fulfill({ json: malformed ? { weeks: null } : calendar }));
+    await context.route('https://github-contributions-api.jogruber.de/**', route => { thirdPartyRequests++; return route.abort(); });
+    await context.addInitScript(() => sessionStorage.setItem('portfolio:intro-seen', 'true'));
+    const view = await context.newPage();
+    view.on('pageerror', error => errors.push(error.message));
+    await view.clock.install();
+    const open = async () => {
+      await view.goto(base, { waitUntil: 'domcontentloaded' });
+      await view.locator('#activite').waitFor({ state: 'attached' });
+    };
+    const total = count => view.getByText(`${count} contributions sur la dernière année`, { exact: true });
+    const repoCount = count => view.locator('#activite').getByText('Dépôts', { exact: true }).locator('../..').getByText(String(count), { exact: true });
+    const refresh = async () => view.evaluate(() => {
+      Object.defineProperty(document, 'visibilityState', { configurable: true, value: 'visible' });
+      document.dispatchEvent(new Event('visibilitychange'));
+    });
+    await open();
+    await total(calendar.totalContributions).waitFor({ state: 'attached' });
+    await repoCount(profile.repoCount).waitFor({ state: 'attached' });
+    check(await view.locator('#activite [aria-label*="contribution"]').count() === days.length, 'Browser renders all calendar days');
+    await view.locator('#activite').scrollIntoViewIfNeeded();
+    await view.screenshot({ path: 'output/playwright/github-auto-desktop.png' });
+    const newer = new Date(now + 60_000).toISOString();
+    await view.evaluate(({ calendar, profile, newer }) => {
+      localStorage.setItem('github-contributions-Thnxs-mg', JSON.stringify({ ...calendar, generatedAt: newer, totalContributions: 4 }));
+      localStorage.setItem('github-data-Thnxs-mg', JSON.stringify({ ...profile, generatedAt: newer, repoCount: 42 }));
+    }, { calendar, profile, newer });
+    await open();
+    await total(4).waitFor({ state: 'attached' });
+    await repoCount(42).waitFor({ state: 'attached' });
+    checks.push('Older deployed files cannot overwrite newer browser caches');
+    calendar = { ...calendar, generatedAt: new Date(now + 120_000).toISOString(), totalContributions: 7 };
+    profile = { ...profile, generatedAt: calendar.generatedAt, repoCount: 43 };
+    await refresh();
+    await total(7).waitFor({ state: 'attached' });
+    await repoCount(43).waitFor({ state: 'attached' });
+    checks.push('Returning to visible tab refreshes profile and calendar without reload');
+    calendar = { ...calendar, generatedAt: new Date(now + 180_000).toISOString(), totalContributions: 8 };
+    profile = { ...profile, generatedAt: calendar.generatedAt, repoCount: 44 };
+    await view.clock.fastForward(15 * 60 * 1000);
+    await total(8).waitFor({ state: 'attached' });
+    await repoCount(44).waitFor({ state: 'attached' });
+    checks.push('Visible tab refreshes both files automatically after fifteen minutes');
+    unavailable = true;
+    await refresh();
+    await view.getByText('Le calendrier public GitHub est momentanément indisponible.', { exact: true }).waitFor({ state: 'attached' });
+    check(await total(8).count() === 1 && await repoCount(44).count() === 1, 'Network failure preserves both browser caches');
+    unavailable = false;
+    malformed = true;
+    await refresh();
+    await view.getByText('Le calendrier public GitHub est momentanément indisponible.', { exact: true }).waitFor({ state: 'attached' });
+    check(await total(8).count() === 1, 'Invalid calendar cannot replace usable cache');
+    malformed = false;
+    await view.addInitScript(() => {
+      Object.defineProperty(window, 'localStorage', { configurable: true, get() { throw new DOMException('Blocked', 'SecurityError'); } });
+    });
+    calendar = { ...savedCalendar, generatedAt: new Date(now).toISOString() };
+    profile = { ...savedProfile, generatedAt: calendar.generatedAt };
+    await open();
+    await total(calendar.totalContributions).waitFor({ state: 'attached' });
+    await repoCount(profile.repoCount).waitFor({ state: 'attached' });
+    checks.push('Blocked localStorage does not prevent either data request');
+    await view.setViewportSize({ width: 390, height: 844 });
+    await view.locator('#activite').scrollIntoViewIfNeeded();
+    await view.screenshot({ path: 'output/playwright/github-auto-mobile.png' });
+    check(await view.evaluate(() => document.documentElement.scrollWidth <= innerWidth), 'Mobile has no horizontal overflow');
+    check(thirdPartyRequests === 0, 'Browser never requests third-party contribution service');
+    check(errors.length === 0, `No GitHub runtime errors: ${errors.join(', ')}`);
+  } finally { await context.close(); }
+  return { passed: checks.length, checks };
+}
+
 assert.ok((await fetch(url)).ok, 'Start the portfolio server first');
 try {
   run('open', url);
+  if (!process.argv.includes('--github-only')) {
   console.log(run('run-code', smoke.toString()));
   console.log(run('run-code', motionChecks.toString()));
   console.log(run('run-code', introChecks.toString()));
   console.log(run('run-code', transitionChecks.toString()));
+  }
+  console.log(run('run-code', githubChecks.toString()));
 } finally {
   run('close');
 }

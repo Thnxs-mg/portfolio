@@ -1,8 +1,13 @@
 import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
+import { execFileSync } from 'node:child_process';
 
 const username = process.env.GITHUB_USERNAME || 'Thnxs-mg';
-const token = process.env.GH_CONTRIBUTIONS_TOKEN;
+let token = process.env.GH_CONTRIBUTIONS_TOKEN || process.env.GITHUB_TOKEN || process.env.GH_TOKEN;
+if (!token) {
+  try { token = execFileSync('gh', ['auth', 'token'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim(); }
+  catch { /* The public fallback does not need authentication. */ }
+}
 const outputPath = process.env.CONTRIBUTIONS_OUTPUT || 'public/github-contributions.json';
 const requestTimeoutMs = Number(process.env.GITHUB_REQUEST_TIMEOUT_MS || 15_000);
 const contributionColors = ['#ebedf0', '#9be9a8', '#40c463', '#30a14e', '#216e39'];
@@ -13,7 +18,7 @@ Usage: npm run fetch:github-contributions
 
 Environment:
   GITHUB_USERNAME              GitHub login to fetch. Defaults to Thnxs-mg.
-  GH_CONTRIBUTIONS_TOKEN       Optional GitHub token for GraphQL contributions.
+  GH_CONTRIBUTIONS_TOKEN       Optional GitHub token; also accepts GITHUB_TOKEN/GH_TOKEN or gh auth.
   CONTRIBUTIONS_OUTPUT         Output JSON path. Defaults to public/github-contributions.json.
   GITHUB_REQUEST_TIMEOUT_MS    Request timeout in milliseconds. Defaults to 15000.
 `);

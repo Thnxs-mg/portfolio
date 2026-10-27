@@ -215,7 +215,7 @@ const sortedByActivity = [...ownedRepos].sort((a, b) => {
   return dateB - dateA;
 });
 
-const repositories = await mapLimit(sortedByActivity, languageConcurrency, async (repo) => {
+const repositories = await mapLimit(sortedByActivity.filter(repo => !repo.private), languageConcurrency, async (repo) => {
   const languages = repo.languages_url ? await githubFetch(repo.languages_url, token) : {};
   const primaryLanguage = repo.language ?? Object.entries(languages).sort(([, a], [, b]) => b - a)[0]?.[0] ?? null;
 

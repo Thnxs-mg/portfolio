@@ -21,7 +21,7 @@ const DAY_LABELS = {
 };
 
 const formatDate = (value: string | null, language: Language) => {
-  if (!value) {
+  if (!value || !Number.isFinite(Date.parse(value))) {
     return language === 'fr' ? 'Aucune activité publique' : 'No public activity';
   }
 
@@ -91,10 +91,11 @@ const formatContributionTitle = (date: string, count: number, language: Language
 };
 
 const ActiviteGithub: React.FC<ActiviteGithubProps> = ({ language }) => {
-  const { user, summary, loading, error } = useGitHubData(GITHUB_USERNAME);
+  const { user, summary, generatedAt: profileGeneratedAt, loading, error } = useGitHubData(GITHUB_USERNAME);
   const {
     weeks,
     total: contributionTotal,
+    generatedAt: contributionsGeneratedAt,
     loading: contributionsLoading,
     error: contributionsError,
   } = useGitHubContributions(GITHUB_USERNAME);
@@ -155,13 +156,17 @@ const ActiviteGithub: React.FC<ActiviteGithubProps> = ({ language }) => {
                 <p className="text-sm font-bold text-slate-500 dark:text-gray-400">
                   {contributionsLoading
                     ? (language === 'fr' ? 'Chargement du calendrier...' : 'Loading calendar...')
-                    : contributionsError
-                      ? (language === 'fr' ? 'Le calendrier public GitHub est momentanément indisponible.' : 'The public GitHub calendar is temporarily unavailable.')
-                      : language === 'fr'
+                    : language === 'fr'
                         ? `${visibleTotal} contributions sur la dernière année`
                         : `${visibleTotal} contributions in the last year`}
                 </p>
               </div>
+
+              {contributionsGeneratedAt && (
+                <p className="mb-5 text-xs text-slate-500 dark:text-gray-400">
+                  {language === 'fr' ? 'Actualisé le ' : 'Updated '}{formatDate(contributionsGeneratedAt, language)}
+                </p>
+              )}
 
               <div className="rounded-2xl border border-slate-100 dark:border-white/10 bg-slate-50/70 dark:bg-black/10 p-3 sm:p-5 overflow-hidden">
                 <div className="w-full">
@@ -228,7 +233,7 @@ const ActiviteGithub: React.FC<ActiviteGithubProps> = ({ language }) => {
 
               {contributionsError && (
                 <p className="mt-4 rounded-xl bg-red-50 dark:bg-red-500/10 px-4 py-3 text-xs font-bold text-red-600 dark:text-red-300">
-                  {contributionsError}
+                  {language === 'fr' ? 'Le calendrier public GitHub est momentanément indisponible.' : 'The public GitHub calendar is temporarily unavailable.'}
                 </p>
               )}
             </div>
@@ -272,11 +277,17 @@ const ActiviteGithub: React.FC<ActiviteGithubProps> = ({ language }) => {
 
                 <div className="mt-auto pt-4 border-t border-slate-100 dark:border-white/10">
                   <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">
-                    {language === 'fr' ? 'Dernière activité publique' : 'Latest public activity'}
+                    {language === 'fr' ? 'Dernier push sur un dépôt' : 'Latest repository push'}
                   </p>
                   <p className="text-sm font-bold text-[#151621] dark:text-white">
                     {loading ? '...' : formatDate(summary.lastUpdatedAt, language)}
                   </p>
+                  {profileGeneratedAt && (
+                    <p className="mt-2 text-xs text-slate-500 dark:text-gray-400">
+                      {language === 'fr' ? 'Dépôts publics et privés, hors forks · Actualisé le ' : 'Public and private repositories, excluding forks · Updated '}
+                      {formatDate(profileGeneratedAt, language)}
+                    </p>
+                  )}
                   {error && (
                     <p className="mt-3 text-xs font-bold text-red-500">
                       {error}
